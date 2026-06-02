@@ -13,22 +13,17 @@
     "dev:backend": "turbo run dev --filter=@greenways/api",
     "dev:strapi": "turbo run dev --filter=@greenways/api",
     "dev:org-manager": "turbo run dev --filter=@greenways/organization-manager",
-    "dev:landing": "npm run dev:org-manager",
     "dev:accounts": "turbo run dev --filter=@greenways/accounts",
     "dev:pm": "turbo run dev --filter=@greenways/pm",
     "build": "turbo run build",
     "build:org-manager": "turbo run build --filter=@greenways/organization-manager",
-    "build:landing": "npm run build:org-manager",
     "build:accounts": "turbo run build --filter=@greenways/accounts",
     "build:pm": "turbo run build --filter=@greenways/pm",
     "build:api": "turbo run build --filter=@greenways/api",
     "start": "turbo run start",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md,js,jsx,json}\"",
-    "clean": "turbo run clean",
-    "docker:build": "docker compose build",
-    "docker:up": "docker compose up -d",
-    "docker:down": "docker compose down"
+    "clean": "turbo run clean"
   },
   "devDependencies": {
     "prettier": "^3.1.1",

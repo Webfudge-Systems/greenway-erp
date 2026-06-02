@@ -20,6 +20,7 @@ const allowedOrigins = [...new Set([...defaultOrigins, ...extraOrigins])];
 const allowedOriginPatterns = [
   /^https:\/\/[a-z0-9-]+\.vercel\.app$/,
   /^https:\/\/[a-z0-9-]+\.greenwaymobility\.in$/,
+  /^https:\/\/[a-z0-9-]+\.up\.railway\.app$/,
 ];
 
 module.exports = [
@@ -64,4 +65,5 @@ module.exports = [
   'strapi::favicon',
   'strapi::public',
   'global::jwt-auth',
+  'global::api-cache',
 ];

@@ -16,7 +16,9 @@ apps/api/build/
 .env.local
 .env.*.local
 !.env.example
-!.env.production.example
+!.env.railway.example
+**/!.env.railway.example
+docs/env.*.example
 apps/**/.env.local
 
 # Strapi
