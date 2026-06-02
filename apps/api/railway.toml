@@ -2,7 +2,7 @@
 
 [build]
 builder = "NIXPACKS"
-buildCommand = "cd ../.. && npm run build --workspace=@greenways/api"
+buildCommand = "npm run build"
 
 [deploy]
 startCommand = "npm run start"
