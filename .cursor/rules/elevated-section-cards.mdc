@@ -1,0 +1,38 @@
+---
+description: Full-width elevated section cards on add/edit/detail form pages
+globs: apps/**/app/**/*.{js,jsx,tsx}
+alwaysApply: false
+---
+
+# Elevated section cards
+
+Use **full-width elevated** cards for form sections on add, edit, and detail pages (same pattern as `apps/pm/app/projects/add/page.js`).
+
+## Pattern
+
+- Page shell: `space-y-6 p-4 md:p-6` (no `max-w-*` on the form wrapper).
+- Each section: `Card` with `variant="elevated"` and `className={ELEVATED_SECTION_CARD_CLASS}` from `@greenways/ui`.
+- `ELEVATED_SECTION_CARD_CLASS` is `w-full rounded-xl` (built-in shadow from `Card` elevated variant).
+- Section title: `SectionCardTitleContent` with icon + label, or `Card` `title` / `subtitle` props.
+- Alternative: `FormSectionCard` (already applies `ELEVATED_SECTION_CARD_CLASS` by default).
+
+## Example
+
+```jsx
+import { Card, ELEVATED_SECTION_CARD_CLASS, SectionCardTitleContent, Input } from '@greenways/ui'
+
+<Card
+  variant="elevated"
+  className={ELEVATED_SECTION_CARD_CLASS}
+  title={<SectionCardTitleContent icon={FolderOpen} label="Section title" />}
+  subtitle="Short description of this section."
+>
+  {/* fields */}
+</Card>
+```
+
+## Do not
+
+- Wrap section forms in `max-w-3xl` unless a deliberate narrow layout is required.
+- Place section content directly on the page background without an elevated `Card`.
+- Use ad-hoc `border shadow-sm` overrides instead of `variant="elevated"`.

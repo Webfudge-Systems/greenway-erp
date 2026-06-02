@@ -1,0 +1,44 @@
+{
+  "kind": "collectionType",
+  "collectionName": "allocations",
+  "info": {
+    "singularName": "allocation",
+    "pluralName": "allocations",
+    "displayName": "Allocation",
+    "description": "Vehicle allocation records"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "dealerId": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "default": "ALLOCATED"
+    },
+    "metadata": {
+      "type": "json"
+    },
+    "vehicle": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::vehicle.vehicle",
+      "required": true
+    },
+    "organization": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::organization.organization",
+      "required": true
+    },
+    "createdBy": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    }
+  }
+}
+

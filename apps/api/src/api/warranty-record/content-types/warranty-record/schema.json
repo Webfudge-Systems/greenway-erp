@@ -1,0 +1,51 @@
+{
+  "kind": "collectionType",
+  "collectionName": "warranty_records",
+  "info": {
+    "singularName": "warranty-record",
+    "pluralName": "warranty-records",
+    "displayName": "Warranty Record",
+    "description": "Vehicle warranty and claim records"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "provider": {
+      "type": "string",
+      "required": true
+    },
+    "claimNumber": {
+      "type": "string"
+    },
+    "claimStatus": {
+      "type": "string",
+      "default": "OPEN"
+    },
+    "details": {
+      "type": "text"
+    },
+    "metadata": {
+      "type": "json"
+    },
+    "vehicle": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::vehicle.vehicle",
+      "required": true
+    },
+    "organization": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::organization.organization",
+      "required": true
+    },
+    "createdBy": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    }
+  }
+}
+

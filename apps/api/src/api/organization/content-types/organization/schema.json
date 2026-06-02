@@ -1,0 +1,116 @@
+{
+    "kind": "collectionType",
+    "collectionName": "organizations",
+    "info": {
+        "singularName": "organization",
+        "pluralName": "organizations",
+        "displayName": "Organization",
+        "description": "Organizations/Enterprises in the platform"
+    },
+    "options": {
+        "draftAndPublish": false
+    },
+    "pluginOptions": {},
+    "attributes": {
+        "name": {
+            "type": "string",
+            "required": true
+        },
+        "slug": {
+            "type": "uid",
+            "targetField": "name",
+            "required": true
+        },
+        "companyEmail": {
+            "type": "email"
+        },
+        "companyPhone": {
+            "type": "string"
+        },
+        "website": {
+            "type": "string"
+        },
+        "logo": {
+            "type": "media",
+            "multiple": false,
+            "required": false,
+            "allowedTypes": [
+                "images"
+            ]
+        },
+        "address": {
+            "type": "json"
+        },
+        "industry": {
+            "type": "enumeration",
+            "enum": [
+                "technology",
+                "finance",
+                "healthcare",
+                "education",
+                "retail",
+                "manufacturing",
+                "services",
+                "other"
+            ]
+        },
+        "size": {
+            "type": "enumeration",
+            "enum": [
+                "size_1_10",
+                "size_11_50",
+                "size_51_200",
+                "size_201_500",
+                "size_500_plus"
+            ]
+        },
+        "owner": {
+            "type": "relation",
+            "relation": "manyToOne",
+            "target": "plugin::users-permissions.user"
+        },
+        "subscriptions": {
+            "type": "relation",
+            "relation": "oneToMany",
+            "target": "api::subscription.subscription",
+            "mappedBy": "organization"
+        },
+        "organizationUsers": {
+            "type": "relation",
+            "relation": "oneToMany",
+            "target": "api::organization-user.organization-user",
+            "mappedBy": "organization"
+        },
+        "activeModules": {
+            "type": "json",
+            "default": {}
+        },
+        "status": {
+            "type": "enumeration",
+            "enum": [
+                "trial",
+                "active",
+                "suspended",
+                "cancelled"
+            ],
+            "default": "trial"
+        },
+        "onboardingCompleted": {
+            "type": "boolean",
+            "default": false
+        },
+        "trialEndsAt": {
+            "type": "datetime"
+        },
+        "securitySettings": {
+            "type": "json",
+            "default": {
+                "requireMfa": false,
+                "sessionTimeoutMinutes": 480,
+                "passwordMinLength": 8,
+                "allowPasswordLogin": true,
+                "allowedEmailDomains": []
+            }
+        }
+    }
+}

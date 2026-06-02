@@ -1,0 +1,16 @@
+{
+  "name": "@greenways/utils",
+  "version": "0.1.0",
+  "description": "Common utility functions for Greenway Mobility Suite",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./formatters": "./src/formatters/index.js",
+    "./crmShared": "./src/crmShared/index.js"
+  },
+  "scripts": {
+    "lint": "eslint src"
+  },
+  "author": "Greenway Mobility",
+  "license": "MIT"
+}

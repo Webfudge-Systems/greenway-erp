@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build all apps
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+          NEXT_PUBLIC_API_URL: https://api.greenwaymobility.in
+          NEXT_PUBLIC_ORG_MANAGER_URL: https://greenwaymobility.in
+          NEXT_PUBLIC_SITE_URL: https://greenwaymobility.in
+          NEXT_PUBLIC_ACCOUNTS_APP_URL: https://accounts.greenwaymobility.in
+          NEXT_PUBLIC_PM_APP_URL: https://pm.greenwaymobility.in

@@ -1,0 +1,115 @@
+# Production-style stack for local/staging deploys.
+# Copy .env.production.example to .env and fill secrets before: docker compose up -d
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DATABASE_USERNAME:-greenways}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-change_me}
+      POSTGRES_DB: ${DATABASE_NAME:-greenways}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DATABASE_USERNAME:-greenways}']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 1337
+      DATABASE_CLIENT: postgres
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: ${DATABASE_NAME:-greenways}
+      DATABASE_USERNAME: ${DATABASE_USERNAME:-greenways}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-change_me}
+      DATABASE_SSL: 'false'
+    ports:
+      - '1337:1337'
+    volumes:
+      - api_uploads:/app/apps/api/public/uploads
+
+  organization-manager:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.next
+      args:
+        APP_FILTER: '@greenways/organization-manager'
+        APP_PATH: apps/organization-manager
+        PORT: 3000
+    restart: unless-stopped
+    depends_on:
+      - api
+    env_file:
+      - .env
+    environment:
+      PORT: 3000
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:1337}
+      NEXT_PUBLIC_ORG_MANAGER_URL: ${NEXT_PUBLIC_ORG_MANAGER_URL:-http://localhost:3000}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+      NEXT_PUBLIC_ACCOUNTS_APP_URL: ${NEXT_PUBLIC_ACCOUNTS_APP_URL:-http://localhost:3001}
+      NEXT_PUBLIC_PM_APP_URL: ${NEXT_PUBLIC_PM_APP_URL:-http://localhost:3002}
+    ports:
+      - '3000:3000'
+
+  accounts:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.next
+      args:
+        APP_FILTER: '@greenways/accounts'
+        APP_PATH: apps/accounts
+        PORT: 3001
+    restart: unless-stopped
+    depends_on:
+      - api
+    env_file:
+      - .env
+    environment:
+      PORT: 3001
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:1337}
+      NEXT_PUBLIC_ACCOUNTS_APP_URL: ${NEXT_PUBLIC_ACCOUNTS_APP_URL:-http://localhost:3001}
+      NEXT_PUBLIC_PM_APP_URL: ${NEXT_PUBLIC_PM_APP_URL:-http://localhost:3002}
+      NEXT_PUBLIC_ORG_MANAGER_URL: ${NEXT_PUBLIC_ORG_MANAGER_URL:-http://localhost:3000}
+    ports:
+      - '3001:3001'
+
+  pm:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.next
+      args:
+        APP_FILTER: '@greenways/pm'
+        APP_PATH: apps/pm
+        PORT: 3002
+    restart: unless-stopped
+    depends_on:
+      - api
+    env_file:
+      - .env
+    environment:
+      PORT: 3002
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:1337}
+      NEXT_PUBLIC_PM_APP_URL: ${NEXT_PUBLIC_PM_APP_URL:-http://localhost:3002}
+      NEXT_PUBLIC_ACCOUNTS_APP_URL: ${NEXT_PUBLIC_ACCOUNTS_APP_URL:-http://localhost:3001}
+      NEXT_PUBLIC_ORG_MANAGER_URL: ${NEXT_PUBLIC_ORG_MANAGER_URL:-http://localhost:3000}
+    ports:
+      - '3002:3002'
+
+volumes:
+  postgres_data:
+  api_uploads:

@@ -1,0 +1,52 @@
+{
+  "kind": "collectionType",
+  "collectionName": "vehicle_events",
+  "info": {
+    "singularName": "vehicle-event",
+    "pluralName": "vehicle-events",
+    "displayName": "Vehicle Event",
+    "description": "Append-only lifecycle events for vehicles"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "eventType": {
+      "type": "enumeration",
+      "enum": [
+        "CREATED",
+        "ALLOCATED",
+        "DISPATCHED",
+        "IN_TRANSIT",
+        "DELIVERED",
+        "ACTIVE",
+        "INACTIVE",
+        "SERVICE_ADDED",
+        "WARRANTY_CLAIM"
+      ],
+      "required": true
+    },
+    "metadata": {
+      "type": "json"
+    },
+    "vehicle": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::vehicle.vehicle",
+      "required": true
+    },
+    "organization": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::organization.organization",
+      "required": true
+    },
+    "createdBy": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    }
+  }
+}
+

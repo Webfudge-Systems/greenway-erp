@@ -1,0 +1,47 @@
+{
+  "kind": "collectionType",
+  "collectionName": "service_records",
+  "info": {
+    "singularName": "service-record",
+    "pluralName": "service-records",
+    "displayName": "Service Record",
+    "description": "Vehicle service and maintenance records"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "text"
+    },
+    "serviceDate": {
+      "type": "date"
+    },
+    "metadata": {
+      "type": "json"
+    },
+    "vehicle": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::vehicle.vehicle",
+      "required": true
+    },
+    "organization": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::organization.organization",
+      "required": true
+    },
+    "createdBy": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    }
+  }
+}
+

@@ -1,0 +1,15 @@
+{
+  "name": "@greenways/config",
+  "version": "0.1.0",
+  "description": "Configuration and theme system for Greenway Mobility Suite",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./next-base": "./next-base.js"
+  },
+  "scripts": {
+    "lint": "eslint src"
+  },
+  "author": "Greenway Mobility",
+  "license": "MIT"
+}
