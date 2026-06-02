@@ -213,6 +213,7 @@ Redeploy Railway after changing CORS.
 | Issue | Fix |
 |-------|-----|
 | Build fails on Railway | Root Directory = `apps/api`; Node 20; check deploy logs |
+| `better-sqlite3` / `node-gyp` / Python error on install | Production uses Postgres only — `better-sqlite3` is a devDependency and Nixpacks runs `npm ci --omit=dev` from the monorepo root (see `apps/api/nixpacks.toml`). Do not add Python to Railway for SQLite. |
 | DB connection error | Link `DATABASE_URL` from Postgres; `DATABASE_SSL=true`, `DATABASE_SSL_REJECT_UNAUTHORIZED=false` |
 | CORS blocked | Add frontend origin to `CORS_ORIGINS`; redeploy API |
 | Admin panel wrong URL | Set `PUBLIC_URL` + `STRAPI_ADMIN_BACKEND_URL` to Railway public URL |

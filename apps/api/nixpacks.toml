@@ -7,10 +7,11 @@ NIXPACKS_NODE_VERSION = "20"
 nixPkgs = ["nodejs_20", "vips"]
 
 [phases.install]
-cmds = ["npm install"]
+# Monorepo root lockfile; omit dev deps (better-sqlite3 is local SQLite only).
+cmds = ["cd ../.. && npm ci --omit=dev --workspace=@greenways/api"]
 
 [phases.build]
-cmds = ["npm run build"]
+cmds = ["cd ../.. && npm run build --workspace=@greenways/api"]
 
 [start]
 cmd = "npm run start"
