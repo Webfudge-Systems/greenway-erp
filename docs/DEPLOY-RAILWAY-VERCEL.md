@@ -27,10 +27,10 @@ Step-by-step for your current Railway setup: **Greenway-Backend** + **Postgres**
 
 1. Open **Greenway-Backend** → **Settings**.
 2. **Root Directory:** set to `apps/api` (recommended).
-3. **Build:** Nixpacks will use `apps/api/nixpacks.toml` (Node 20, `npm run build`).
-4. **Start:** `npm run start` (from `apps/api/railway.toml`).
+3. **Build:** `npm install` then `npm run build` (Railway default Node/Nixpacks — **no** `nixpacks.toml`, same as webfudge-platform).
+4. **Start:** `npm run start`.
 
-If you keep the repo root as Root Directory instead, Railway uses root `nixpacks.toml` / `railway.toml`.
+See **[RAILWAY_STRAPI_DEPLOY.md](./RAILWAY_STRAPI_DEPLOY.md)** for variables, SSL, and crash-loop fixes.
 
 ### Step 3 — Link Postgres to backend
 
@@ -50,6 +50,9 @@ Use `apps/api/.env.railway.example` as the checklist. Minimum set:
 | `DATABASE_URL` | Reference → Postgres |
 | `DATABASE_SSL` | `true` |
 | `DATABASE_SSL_REJECT_UNAUTHORIZED` | `false` |
+| `DATABASE_POOL_MIN` | `0` |
+| `DATABASE_POOL_MAX` | `5` |
+| `SEED_DATA` | `false` |
 | `APP_KEYS` | Two keys, comma-separated (`openssl rand -base64 32` × 2) |
 | `API_TOKEN_SALT` | `openssl rand -base64 32` |
 | `ADMIN_JWT_SECRET` | `openssl rand -base64 32` |
@@ -201,6 +204,7 @@ Redeploy Railway after changing CORS.
 | File | Use |
 |------|-----|
 | `apps/api/.env.railway.example` | Railway backend variables |
+| `docs/RAILWAY_STRAPI_DEPLOY.md` | Strapi on Railway (webfudge-style checklist) |
 | `docs/env.vercel.example` | Vercel variables (all frontends) |
 | `apps/organization-manager/.env.example` | Local dev |
 | `apps/accounts/.env.example` | Local dev |
@@ -213,7 +217,8 @@ Redeploy Railway after changing CORS.
 | Issue | Fix |
 |-------|-----|
 | Build fails on Railway | Root Directory = `apps/api`; Node 20; check deploy logs |
-| `better-sqlite3` / `node-gyp` / Python error on install | Strapi still installs `better-sqlite3` as a transitive dep — `apps/api/nixpacks.toml` includes `python3`, `gcc`, and `build-essential` so `node-gyp` can compile it. Production still uses Postgres only at runtime. |
+| `better-sqlite3` / `node-gyp` / Python error on install | Use Railway default Node buildpack (no custom `nixpacks.toml`), same as webfudge-platform. Set `DATABASE_CLIENT=postgres` on Railway. |
+| `pyexpat.h` / Python provider conflict | Remove `nixpacks.toml` or drop `providers = ["python"]` if you add one — do not combine Python provider + `python3` nixPkg. |
 | DB connection error | Link `DATABASE_URL` from Postgres; `DATABASE_SSL=true`, `DATABASE_SSL_REJECT_UNAUTHORIZED=false` |
 | CORS blocked | Add frontend origin to `CORS_ORIGINS`; redeploy API |
 | Admin panel wrong URL | Set `PUBLIC_URL` + `STRAPI_ADMIN_BACKEND_URL` to Railway public URL |

@@ -1,23 +1,43 @@
 const path = require('path');
 
-function postgresSsl(env) {
-  if (!env.bool('DATABASE_SSL', false)) {
-    return false;
-  }
+function buildPostgresSsl(env, databaseUrl) {
+  const explicit = env.bool('DATABASE_SSL');
+  const inferred =
+    Boolean(databaseUrl) &&
+    /railway|rlwy\.net|sslmode=require|ssl=true/i.test(databaseUrl);
+  const enabled = explicit || inferred;
+
+  if (!enabled) return false;
 
   return {
-    rejectUnauthorized: env.bool('DATABASE_SSL_REJECT_UNAUTHORIZED', true),
+    key: env('DATABASE_SSL_KEY', undefined),
+    cert: env('DATABASE_SSL_CERT', undefined),
+    ca: env('DATABASE_SSL_CA', undefined),
+    capath: env('DATABASE_SSL_CAPATH', undefined),
+    cipher: env('DATABASE_SSL_CIPHER', undefined),
+    rejectUnauthorized: env.bool('DATABASE_SSL_REJECT_UNAUTHORIZED', false),
   };
 }
 
 module.exports = ({ env }) => {
+  const client = env('DATABASE_CLIENT', 'sqlite');
   const databaseUrl = env('DATABASE_URL');
-  const usePostgres =
-    Boolean(databaseUrl) ||
-    env('DATABASE_CLIENT', 'sqlite') === 'postgres' ||
-    Boolean(env('RAILWAY_ENVIRONMENT'));
 
-  const client = usePostgres ? 'postgres' : env('DATABASE_CLIENT', 'sqlite');
+  const postgresConnection = databaseUrl
+    ? { connectionString: databaseUrl }
+    : {
+        host: env('DATABASE_HOST', 'localhost'),
+        port: env.int('DATABASE_PORT', 5432),
+        database: env('DATABASE_NAME', 'strapi'),
+        user: env('DATABASE_USERNAME', 'strapi'),
+        password: env('DATABASE_PASSWORD', 'strapi'),
+        schema: env('DATABASE_SCHEMA', 'public'),
+      };
+
+  const postgresSsl = buildPostgresSsl(env, databaseUrl);
+  if (postgresSsl) {
+    postgresConnection.ssl = postgresSsl;
+  }
 
   const connections = {
     mysql: {
@@ -39,28 +59,11 @@ module.exports = ({ env }) => {
       pool: { min: env.int('DATABASE_POOL_MIN', 2), max: env.int('DATABASE_POOL_MAX', 10) },
     },
     postgres: {
-      connection: databaseUrl
-        ? {
-            connectionString: databaseUrl,
-            ssl: env.bool('DATABASE_SSL', true)
-              ? {
-                  rejectUnauthorized: env.bool(
-                    'DATABASE_SSL_REJECT_UNAUTHORIZED',
-                    false
-                  ),
-                }
-              : false,
-          }
-        : {
-            host: env('DATABASE_HOST', 'localhost'),
-            port: env.int('DATABASE_PORT', 5432),
-            database: env('DATABASE_NAME', 'strapi'),
-            user: env('DATABASE_USERNAME', 'strapi'),
-            password: env('DATABASE_PASSWORD', 'strapi'),
-            ssl: postgresSsl(env),
-            schema: env('DATABASE_SCHEMA', 'public'),
-          },
-      pool: { min: env.int('DATABASE_POOL_MIN', 2), max: env.int('DATABASE_POOL_MAX', 10) },
+      connection: postgresConnection,
+      pool: {
+        min: env.int('DATABASE_POOL_MIN', 0),
+        max: env.int('DATABASE_POOL_MAX', 5),
+      },
     },
     sqlite: {
       connection: {
