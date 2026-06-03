@@ -219,6 +219,7 @@ Redeploy Railway after changing CORS.
 | Build fails on Railway | Root Directory = `apps/api`; Node 20; check deploy logs |
 | `better-sqlite3` / `node-gyp` / Python error on install | Use Railway default Node buildpack (no custom `nixpacks.toml`), same as webfudge-platform. Set `DATABASE_CLIENT=postgres` on Railway. |
 | `pyexpat.h` / Python provider conflict | Remove `nixpacks.toml` or drop `providers = ["python"]` if you add one — do not combine Python provider + `python3` nixPkg. |
+| `No workspaces found: --workspace=@greenways/api` | Root Directory is `apps/api` only — set Build Command to `npm run build` in `apps/api/railway.toml` or Railway Settings (clear workspace flags). |
 | DB connection error | Link `DATABASE_URL` from Postgres; `DATABASE_SSL=true`, `DATABASE_SSL_REJECT_UNAUTHORIZED=false` |
 | CORS blocked | Add frontend origin to `CORS_ORIGINS`; redeploy API |
 | Admin panel wrong URL | Set `PUBLIC_URL` + `STRAPI_ADMIN_BACKEND_URL` to Railway public URL |

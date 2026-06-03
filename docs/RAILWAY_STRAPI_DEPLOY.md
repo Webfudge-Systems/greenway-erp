@@ -19,7 +19,8 @@ When **Postgres is online** but **Greenway-Backend is Crashed** with `KnexTimeou
 | Setting | Value |
 |--------|--------|
 | **Root directory** | `apps/api` |
-| **Build** | `npm install` (or `npm ci` if you add a lockfile under `apps/api`) |
+| **Build** | `npm run build` only (see `apps/api/railway.toml` — **not** `--workspace=@greenways/api`) |
+| **Install** | `npm install` (Railway default) |
 | **Start** | `npm run start` → `strapi start` |
 | **Watch paths** | `apps/api/**` (optional) |
 
@@ -97,6 +98,7 @@ Local dev uses SQLite (`DATABASE_CLIENT=sqlite`). Production must use **postgres
 
 | Symptom | Cause |
 |--------|--------|
+| Build: `No workspaces found: --workspace=@greenways/api` | Dashboard build command targets monorepo root; use `npm run build` in `apps/api/railway.toml` |
 | Build: `pyexpat.h` conflict | Custom `nixpacks.toml` with Python provider + `python3` nixPkg |
 | Build: `node-gyp` / Python | Rare on default Node image; match webfudge: no custom nixpacks |
 | Crashed on boot, Knex timeout | `DATABASE_CLIENT` still `sqlite` or unset |

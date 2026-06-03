@@ -1,5 +1,9 @@
 # Railway config when Root Directory = apps/api (same pattern as webfudge-platform apps/backend)
-# No custom nixpacks.toml — Railway default Node/Nixpacks handles npm install + build.
+# Override dashboard defaults that use --workspace=@greenways/api (monorepo root is not in the container).
+
+[build]
+builder = "NIXPACKS"
+buildCommand = "npm run build"
 
 [deploy]
 startCommand = "npm run start"
