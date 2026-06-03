@@ -16,6 +16,7 @@ apps/api/build/
 .env.local
 .env.*.local
 !.env.example
+!.env.vercel
 !.env.railway.example
 **/!.env.railway.example
 docs/env.*.example

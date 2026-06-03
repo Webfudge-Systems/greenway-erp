@@ -163,13 +163,15 @@ You do **not** need Turborepo on Vercel. Each project builds itself after a root
 3. Same settings and env vars as Accounts.  
 4. Deploy.
 
-### Step 12 — Custom domains (when ready)
+### Step 12 — Custom domains (webfudge staging)
 
-| Vercel project | Example domain |
-|----------------|----------------|
-| Organization Manager | `greenwaymobility.in` |
-| Accounts | `accounts.greenwaymobility.in` |
-| PM | `pm.greenwaymobility.in` |
+| Vercel project | Domain |
+|----------------|--------|
+| Organization Manager | `orbit.webfudge.greenwaymobility.com` |
+| Accounts | `base.webfudge.greenwaymobility.com` |
+| PM | `erp.webfudge.greenwaymobility.com` |
+
+API: `https://greenway-backend-production.up.railway.app` — see `apps/*/.env.vercel`.
 
 After adding domains, update **all** `NEXT_PUBLIC_*` values to production URLs and **Redeploy** all three Vercel projects.
 
@@ -206,6 +208,9 @@ Redeploy Railway after changing CORS.
 | `apps/api/.env.railway.example` | Railway backend variables |
 | `docs/RAILWAY_STRAPI_DEPLOY.md` | Strapi on Railway (webfudge-style checklist) |
 | `docs/env.vercel.example` | Vercel variables (all frontends) |
+| `apps/organization-manager/.env.vercel` | Vercel copy-paste for org manager |
+| `apps/accounts/.env.vercel` | Vercel copy-paste for accounts |
+| `apps/pm/.env.vercel` | Vercel copy-paste for PM |
 | `apps/organization-manager/.env.example` | Local dev |
 | `apps/accounts/.env.example` | Local dev |
 | `apps/pm/.env.example` | Local dev |
