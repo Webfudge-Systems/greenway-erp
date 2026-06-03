@@ -25,6 +25,9 @@
     "format": "prettier --write \"**/*.{ts,tsx,md,js,jsx,json}\"",
     "clean": "turbo run clean"
   },
+  "optionalDependencies": {
+    "@next/swc-linux-x64-gnu": "14.2.33"
+  },
   "devDependencies": {
     "prettier": "^3.1.1",
     "turbo": "^1.11.2"
