@@ -3,6 +3,7 @@
 const jwt = require('jsonwebtoken');
 const { resolveOrganizationRoleId } = require('../../../utils/organization-role');
 const { membershipSummary } = require('../../../utils/rbac');
+const { departmentsPayload } = require('../../../utils/department-context');
 const { normalizeUserUsername, uniqueUsernameFromEmail } = require('../../../utils/user-username');
 
 // JWT secret - use environment variable or fallback to default
@@ -42,6 +43,8 @@ async function listActiveMemberships(userId, withModules = false) {
     sort: { joinedAt: 'ASC' },
     populate: {
       role: true,
+      departments: { fields: ['id', 'name', 'isActive'] },
+      primaryDepartment: { fields: ['id', 'name', 'isActive'] },
       organization: {
         populate: {
           subscriptions: {
@@ -101,6 +104,7 @@ async function ensureActiveOrganizationMembership(user) {
 
 function organizationPayload(membership) {
   const summary = membershipSummary(membership);
+  const deptInfo = departmentsPayload(membership);
   return {
     ...membership.organization,
     role: summary.role,
@@ -110,6 +114,8 @@ function organizationPayload(membership) {
     permissions: summary.permissions,
     customPermissions: summary.customPermissions,
     joinedAt: summary.joinedAt,
+    departments: deptInfo.departments,
+    primaryDepartmentId: deptInfo.primaryDepartmentId,
   };
 }
 
@@ -212,9 +218,7 @@ module.exports = {
         { expiresIn: '7d' }
       );
 
-      const organizations = user.isPlatformAdmin
-        ? []
-        : await ensureActiveOrganizationMembership(user);
+      const organizations = await ensureActiveOrganizationMembership(user);
 
       ctx.send({
         jwt: token,
@@ -261,9 +265,7 @@ module.exports = {
       }
       user = await normalizeUserUsername(strapi, user);
 
-      const organizations = user.isPlatformAdmin
-        ? []
-        : await ensureActiveOrganizationMembership(user);
+      const organizations = await ensureActiveOrganizationMembership(user);
 
       ctx.send({
         user: userPayload(user),

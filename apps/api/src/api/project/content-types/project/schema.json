@@ -65,6 +65,11 @@
       "relation": "manyToOne",
       "target": "api::organization.organization"
     },
+    "department": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::department.department"
+    },
     "sourceDeal": {
       "type": "relation",
       "relation": "oneToOne",

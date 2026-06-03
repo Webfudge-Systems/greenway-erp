@@ -55,6 +55,7 @@ module.exports = [
         'Origin',
         'Accept',
         'X-Organization-Id',
+        'X-Department-Id',
       ],
     },
   },

@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Eye, Pencil, Plus, Shield, Trash2 } from 'lucide-react'
+import { Eye, MoreHorizontal, Pencil, Plus, Shield, Trash2 } from 'lucide-react'
 import {
   Button,
   Input,
@@ -9,6 +9,7 @@ import {
   LoadingSpinner,
   Modal,
   Table,
+  TableRowActionMenuPortal,
   TabsWithActions,
 } from '@greenways/ui'
 import AccountsPageHeader from '../../components/AccountsPageHeader'
@@ -121,6 +122,7 @@ export default function RolesPage() {
 
   const [deleteRole, setDeleteRole] = useState(null)
   const [deleteSubmitting, setDeleteSubmitting] = useState(false)
+  const [rowActionMenu, setRowActionMenu] = useState(null)
 
   const fetchRoles = useCallback(async () => {
     try {
@@ -315,8 +317,27 @@ export default function RolesPage() {
       {
         key: 'actions',
         label: 'ACTIONS',
+        headerClassName: 'text-right w-[1%] whitespace-nowrap',
+        className: 'text-right w-[1%] whitespace-nowrap align-middle',
         render: (_, role) => (
-          <div className="flex items-center gap-1 justify-end" onClick={(e) => e.stopPropagation()}>
+          <div className="inline-flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="p-2 text-teal-600 hover:bg-teal-50"
+              title="More actions"
+              onClick={(e) => {
+                e.stopPropagation()
+                const r = e.currentTarget.getBoundingClientRect()
+                setRowActionMenu((prev) =>
+                  prev?.id === role.id
+                    ? null
+                    : { id: role.id, top: r.bottom + 4, left: r.left, triggerEl: e.currentTarget, role }
+                )
+              }}
+            >
+              <MoreHorizontal className="w-4 h-4" />
+            </Button>
             {role.isSystem ? (
               <Button
                 variant="ghost"
@@ -362,7 +383,7 @@ export default function RolesPage() {
         ),
       },
     ],
-    []
+    [openViewSystem, openEditCustom]
   )
 
   const readOnlyModal = Boolean(detailModal?.mode === 'view-system')
@@ -377,27 +398,9 @@ export default function RolesPage() {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <KPICard
-          title="Total Roles"
-          value={stats.total}
-          subtitle="System + custom assignments"
-          icon={Shield}
-          colorScheme="orange"
-        />
-        <KPICard
-          title="System Templates"
-          value={stats.systemCount}
-          subtitle="Immutable Admin / Manager / Member"
-          icon={Shield}
-          colorScheme="orange"
-        />
-        <KPICard
-          title="Custom Roles"
-          value={stats.customCount}
-          subtitle="Designed for your organization"
-          icon={Shield}
-          colorScheme="orange"
-        />
+        <KPICard title="Total Roles" value={stats.total} icon={Shield} colorScheme="orange" />
+        <KPICard title="System Templates" value={stats.systemCount} icon={Shield} colorScheme="orange" />
+        <KPICard title="Custom Roles" value={stats.customCount} icon={Shield} colorScheme="orange" />
       </div>
 
       <div className="relative">
@@ -538,6 +541,57 @@ export default function RolesPage() {
           </div>
         </div>
       </Modal>
+
+      {rowActionMenu ? (
+        <TableRowActionMenuPortal
+          open
+          anchor={{
+            top: rowActionMenu.top,
+            left: rowActionMenu.left,
+            triggerEl: rowActionMenu.triggerEl,
+          }}
+          onClose={() => setRowActionMenu(null)}
+        >
+          {rowActionMenu.role?.isSystem ? (
+            <button
+              type="button"
+              className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-teal-50 hover:text-teal-700"
+              onClick={() => {
+                openViewSystem(rowActionMenu.role)
+                setRowActionMenu(null)
+              }}
+            >
+              <Eye className="w-4 h-4 text-teal-600" />
+              View permissions
+            </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-teal-50 hover:text-teal-700"
+                onClick={() => {
+                  openEditCustom(rowActionMenu.role)
+                  setRowActionMenu(null)
+                }}
+              >
+                <Pencil className="w-4 h-4 text-teal-600" />
+                Edit custom role
+              </button>
+              <button
+                type="button"
+                className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-red-600 transition-colors hover:bg-red-50"
+                onClick={() => {
+                  setDeleteRole(rowActionMenu.role)
+                  setRowActionMenu(null)
+                }}
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete role
+              </button>
+            </>
+          )}
+        </TableRowActionMenuPortal>
+      ) : null}
 
       <Modal
         isOpen={Boolean(deleteRole)}

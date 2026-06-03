@@ -41,6 +41,17 @@
     },
     "lastAccessAt": {
       "type": "datetime"
+    },
+    "departments": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "api::department.department",
+      "inversedBy": "organizationUsers"
+    },
+    "primaryDepartment": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::department.department"
     }
   }
 }

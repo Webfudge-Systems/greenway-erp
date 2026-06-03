@@ -29,6 +29,7 @@ const {
   relationId,
   userCanAccessProjectRow,
 } = require('../../../utils/rbac');
+const { mergeDepartmentScopeFilter } = require('../../../utils/department-context');
 const {
   computeNextOccurrence,
   ensureRecurrenceGroupId,
@@ -410,12 +411,14 @@ function addDays(d, n) {
 }
 
 /** Tasks linked to projects where the user is PM or team member. */
-async function projectIdsForMember(strapi, orgId, userId) {
+async function projectIdsForMember(strapi, orgId, userId, departmentId = null) {
+  let filters = {
+    organization: orgId,
+    $or: [{ projectManager: userId }, { teamMembers: userId }],
+  };
+  filters = mergeDepartmentScopeFilter(filters, departmentId);
   const rows = await strapi.entityService.findMany(PROJECT_UID, {
-    filters: {
-      organization: orgId,
-      $or: [{ projectManager: userId }, { teamMembers: userId }],
-    },
+    filters,
     fields: ['id'],
     limit: 500,
   });
@@ -466,7 +469,8 @@ module.exports = createCoreController(UID, ({ strapi }) => ({
       defaultSort: 'scheduledDate:desc',
     });
 
-    const filters = { organization: ctx.state.orgId };
+    let filters = { organization: ctx.state.orgId };
+    filters = mergeDepartmentScopeFilter(filters, ctx.state.departmentId);
     const extra = query.filters;
     const extraFilters = {};
     if (extra && typeof extra === 'object' && !Array.isArray(extra)) {
@@ -481,7 +485,7 @@ module.exports = createCoreController(UID, ({ strapi }) => ({
 
     if (isPmOrgMemberRole(ctx) && ctx.state.user?.id) {
       const uid = ctx.state.user.id;
-      const pids = await projectIdsForMember(strapi, ctx.state.orgId, uid);
+      const pids = await projectIdsForMember(strapi, ctx.state.orgId, uid, ctx.state.departmentId);
       const visOr = [{ assignee: uid }, { collaborators: { id: uid } }];
       if (pids.length) visOr.push({ projects: { id: { $in: pids } } });
       const hasExtra = Object.keys(extraFilters).length > 0;
@@ -556,6 +560,9 @@ module.exports = createCoreController(UID, ({ strapi }) => ({
     }
 
     data.organization = ctx.state.orgId;
+    if (ctx.state.departmentId && (data.department == null || data.department === '')) {
+      data.department = ctx.state.departmentId;
+    }
     if ((data.assigner == null || data.assigner === '') && ctx.state.user?.id) {
       data.assigner = ctx.state.user.id;
     }
@@ -928,36 +935,41 @@ module.exports = createCoreController(UID, ({ strapi }) => ({
 
     const projectTasksPromise =
       isPmOrgMemberRole(ctx) && userId
-        ? projectIdsForMember(strapi, orgId, userId).then((pids) =>
-            pids.length
+        ? projectIdsForMember(strapi, orgId, userId, ctx.state.departmentId).then((pids) => {
+            let taskFilters = {
+              organization: orgId,
+              projects: { id: { $in: pids } },
+            };
+            taskFilters = mergeDepartmentScopeFilter(taskFilters, ctx.state.departmentId);
+            return pids.length
               ? strapi.entityService.findMany(UID, {
-                  filters: {
-                    organization: orgId,
-                    projects: { id: { $in: pids } },
-                  },
+                  filters: taskFilters,
                   limit: 200,
                   sort: { scheduledDate: 'ASC' },
                   populate: ['leadCompany', 'assignee'],
                 })
-              : []
-          )
+              : [];
+          })
         : Promise.resolve([]);
+
+    const assigneeFilters = mergeDepartmentScopeFilter(
+      { organization: orgId, assignee: userId },
+      ctx.state.departmentId
+    );
+    const collaboratorFilters = mergeDepartmentScopeFilter(
+      { organization: orgId, collaborators: { id: userId } },
+      ctx.state.departmentId
+    );
 
     const [asAssignee, asCollaborator, fromProjects] = await Promise.all([
       strapi.entityService.findMany(UID, {
-        filters: {
-          organization: orgId,
-          assignee: userId,
-        },
+        filters: assigneeFilters,
         limit: 200,
         sort: { scheduledDate: 'ASC' },
         populate: ['leadCompany', 'assignee'],
       }),
       strapi.entityService.findMany(UID, {
-        filters: {
-          organization: orgId,
-          collaborators: { id: userId },
-        },
+        filters: collaboratorFilters,
         limit: 200,
         sort: { scheduledDate: 'ASC' },
         populate: ['leadCompany', 'assignee'],

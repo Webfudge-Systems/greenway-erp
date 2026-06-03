@@ -243,7 +243,7 @@ export default function TeamsPage() {
           <Select
             label="Department"
             value={form.departmentId}
-            onChange={(e) => setForm((f) => ({ ...f, departmentId: e.target.value }))}
+            onChange={(value) => setForm((f) => ({ ...f, departmentId: value }))}
             options={[
               { value: '', label: 'No department' },
               ...departments.map((d) => ({ value: String(d.id), label: d.name })),
@@ -252,7 +252,7 @@ export default function TeamsPage() {
           <Select
             label="Team leader"
             value={form.leaderId}
-            onChange={(e) => setForm((f) => ({ ...f, leaderId: e.target.value }))}
+            onChange={(value) => setForm((f) => ({ ...f, leaderId: value }))}
             options={[
               { value: '', label: 'No leader' },
               ...users.map((u) => ({ value: String(u.id), label: userLabel(u) })),
@@ -276,7 +276,7 @@ export default function TeamsPage() {
           <Select
             label="Status"
             value={form.isActive ? 'active' : 'inactive'}
-            onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.value === 'active' }))}
+            onChange={(value) => setForm((f) => ({ ...f, isActive: value === 'active' }))}
             options={[
               { value: 'active', label: 'Active' },
               { value: 'inactive', label: 'Inactive' },

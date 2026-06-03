@@ -6,12 +6,24 @@
 
 const { createCoreController } = require('@strapi/strapi').factories;
 const rbac = require('../../../constants/rbac-app-matrix');
-const { canAccess, canManageAppSettings } = require('../../../utils/rbac');
+const {
+  canAccess,
+  canManageAppSettings,
+  canManageOrganizationSecurity,
+  isAdminRole,
+  orgRoleFromCtx,
+} = require('../../../utils/rbac');
 const {
   resolveOrganizationRoleIdForOrg,
   validateOrganizationRoleId,
   ORG_ROLE_UID,
 } = require('../../../utils/organization-role');
+const {
+  applyMembershipDepartments,
+  departmentsPayload,
+  normalizeIdList,
+} = require('../../../utils/department-context');
+const { validateInviteEmailsForSecurity } = require('../../../utils/org-security-settings');
 
 function getRolesAdminError(ctx, orgIdFromParams) {
   if (!ctx.state.user) return 'Missing or invalid credentials';
@@ -137,6 +149,7 @@ module.exports = createCoreController('api::organization.organization', ({ strap
       });
 
       if (!organization) return ctx.notFound('Organization not found');
+      const roleDetails = orgRoleFromCtx(ctx);
       return ctx.send({
         success: true,
         data: {
@@ -144,6 +157,11 @@ module.exports = createCoreController('api::organization.organization', ({ strap
           currentRole: ctx.state.orgRole || 'Member',
           currentRoleCode: ctx.state.orgRoleCode || 'member',
           permissions: ctx.state.effectivePermissions || ctx.state.orgPermissions || rbac.normalizePermissions({}),
+          canEditOrganizationSettings:
+            Boolean(ctx.state.platformAdminContext) ||
+            isAdminRole(roleDetails) ||
+            canManageAppSettings(ctx),
+          canManageSecuritySettings: canManageOrganizationSecurity(ctx),
         },
       });
     } catch (error) {
@@ -319,6 +337,8 @@ module.exports = createCoreController('api::organization.organization', ({ strap
         populate: {
           user: true,
           role: true,
+          departments: { fields: ['id', 'name', 'isActive'] },
+          primaryDepartment: { fields: ['id', 'name'] },
         }
       });
 
@@ -330,6 +350,7 @@ module.exports = createCoreController('api::organization.organization', ({ strap
         const userData = memberAny?.user || {};
         const roleData = memberAny?.role || {};
 
+        const deptInfo = departmentsPayload(memberAny);
         return {
           id: userData?.id || memberAny?.id,
           email: userData?.email || '',
@@ -346,6 +367,9 @@ module.exports = createCoreController('api::organization.organization', ({ strap
           membershipId: memberAny?.id,
           joinedAt: memberAny?.joinedAt,
           lastAccessAt: memberAny?.lastAccessAt,
+          departments: deptInfo.departments,
+          departmentIds: deptInfo.departments.map((d) => d.id),
+          primaryDepartmentId: deptInfo.primaryDepartmentId,
         };
       });
 
@@ -370,12 +394,23 @@ module.exports = createCoreController('api::organization.organization', ({ strap
       directAdd = false,
       directPassword,
       sendWelcomeEmail = true,
+      departmentIds,
+      primaryDepartmentId,
     } = ctx.request.body;
 
     try {
       const hasAccess = await strapi.service('api::organization.organization').checkUserAccess(id, user.id);
       if (!hasAccess) {
         return ctx.forbidden('You do not have access to this organization');
+      }
+
+      const org = await strapi.entityService.findOne('api::organization.organization', id, {
+        fields: ['securitySettings'],
+      });
+      const emailList = Array.isArray(emails) ? emails : emails ? [emails] : [];
+      const domainError = validateInviteEmailsForSecurity(emailList, org?.securitySettings);
+      if (domainError) {
+        return ctx.badRequest(domainError);
       }
 
       if (directAdd) {
@@ -388,6 +423,8 @@ module.exports = createCoreController('api::organization.organization', ({ strap
           customPermissions: permissions || {},
           password: directPassword,
           sendWelcomeEmail: sendWelcomeEmail !== false,
+          departmentIds: normalizeIdList(departmentIds),
+          primaryDepartmentId,
         });
         return ctx.send({
           success: true,
@@ -419,7 +456,8 @@ module.exports = createCoreController('api::organization.organization', ({ strap
   async updateUserMembership(ctx) {
     const { id, membershipId } = ctx.params;
     const user = ctx.state.user;
-    const { roleId, roleCode, roleName, isActive, status } = ctx.request.body || {};
+    const { roleId, roleCode, roleName, isActive, status, departmentIds, primaryDepartmentId } =
+      ctx.request.body || {};
 
     if (!user) {
       return ctx.unauthorized('Missing or invalid credentials');
@@ -433,7 +471,12 @@ module.exports = createCoreController('api::organization.organization', ({ strap
 
       const memberships = await strapi.entityService.findMany('api::organization-user.organization-user', {
         filters: { id: membershipId, organization: id },
-        populate: { user: true, role: true },
+        populate: {
+          user: true,
+          role: true,
+          departments: { fields: ['id', 'name'] },
+          primaryDepartment: { fields: ['id', 'name'] },
+        },
         limit: 1,
       });
 
@@ -458,6 +501,13 @@ module.exports = createCoreController('api::organization.organization', ({ strap
       if (Object.keys(membershipUpdate).length > 0) {
         await strapi.entityService.update('api::organization-user.organization-user', membership.id, {
           data: membershipUpdate,
+        });
+      }
+
+      if (departmentIds !== undefined) {
+        await applyMembershipDepartments(strapi, membership.id, id, {
+          departmentIds: normalizeIdList(departmentIds),
+          primaryDepartmentId,
         });
       }
 
@@ -763,8 +813,8 @@ module.exports = createCoreController('api::organization.organization', ({ strap
     if (String(ctx.state.orgId || '') !== String(id)) {
       return ctx.forbidden('Select this organization before viewing security settings');
     }
-    if (!canManageAppSettings(ctx)) {
-      return ctx.forbidden('You need manage access to CRM or PM settings');
+    if (!canManageOrganizationSecurity(ctx)) {
+      return ctx.forbidden('Only organization admins can view security settings');
     }
 
     try {
@@ -798,8 +848,8 @@ module.exports = createCoreController('api::organization.organization', ({ strap
     if (String(ctx.state.orgId || '') !== String(id)) {
       return ctx.forbidden('Select this organization before updating security settings');
     }
-    if (!canManageAppSettings(ctx)) {
-      return ctx.forbidden('You need manage access to CRM or PM settings');
+    if (!canManageOrganizationSecurity(ctx)) {
+      return ctx.forbidden('Only organization admins can update security settings');
     }
 
     try {

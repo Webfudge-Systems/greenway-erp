@@ -23,6 +23,7 @@ const {
   isPmOrgMemberRole,
   userCanAccessProjectRow,
 } = require('../../../utils/rbac');
+const { mergeDepartmentScopeFilter } = require('../../../utils/department-context');
 
 const UID = 'api::project.project';
 const CLIENT_ACCOUNT_UID = 'api::client-account.client-account';
@@ -33,6 +34,7 @@ const ALLOWED_POPULATE = new Set([
   'tasks',
   'clientAccount',
   'organization',
+  'department',
   'sourceDeal',
 ]);
 
@@ -40,8 +42,15 @@ const sanitizePopulate = createPopulateSanitizer(ALLOWED_POPULATE, [
   'projectManager',
   'clientAccount',
   'organization',
+  'department',
   'sourceDeal',
 ]);
+
+function stampDepartmentOnCreate(data, ctx) {
+  if (ctx.state.departmentId && (data.department == null || data.department === '')) {
+    data.department = ctx.state.departmentId;
+  }
+}
 
 async function assertClientAccountInOrg(strapi, clientAccountId, orgId) {
   if (clientAccountId == null || clientAccountId === '') return null;
@@ -98,7 +107,8 @@ module.exports = createCoreController(UID, ({ strapi }) => ({
       defaultSort: 'updatedAt:desc',
     });
 
-    const filters = { organization: ctx.state.orgId };
+    let filters = { organization: ctx.state.orgId };
+    filters = mergeDepartmentScopeFilter(filters, ctx.state.departmentId);
     if (isPmOrgMemberRole(ctx) && ctx.state.user?.id) {
       const uid = ctx.state.user.id;
       filters.$or = [{ projectManager: uid }, { teamMembers: uid }];
@@ -166,6 +176,7 @@ module.exports = createCoreController(UID, ({ strapi }) => ({
     const data = typeof payload === 'object' ? { ...payload } : {};
 
     data.organization = ctx.state.orgId;
+    stampDepartmentOnCreate(data, ctx);
     if (data.projectManager == null && ctx.state.user?.id) {
       data.projectManager = ctx.state.user.id;
     }

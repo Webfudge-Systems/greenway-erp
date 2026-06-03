@@ -19,6 +19,7 @@ import taskService from '../lib/api/taskService'
 import strapiClient from '../lib/strapiClient'
 import { canReadPM } from '../lib/rbac'
 import { transformTask, transformUser, transformProject } from '../lib/api/dataTransformers'
+import { usePmDepartmentRevision } from '../context/PmDepartmentContext'
 
 /**
  * Shared height for My Tasks + Upcoming Deadlines.
@@ -44,6 +45,7 @@ function getCurrentDate() {
 
 export default function DashboardPage() {
   const { user } = useAuth()
+  const departmentRevision = usePmDepartmentRevision()
 
   const [loading, setLoading] = useState(true)
   const [projects, setProjects] = useState([])
@@ -146,7 +148,7 @@ export default function DashboardPage() {
       return
     }
     loadData()
-  }, [user, getUserId, canViewDashboard, canViewProjects, canViewTasks])
+  }, [user, getUserId, canViewDashboard, canViewProjects, canViewTasks, departmentRevision])
 
   const kpiCards = [
     {

@@ -9,6 +9,7 @@ const { uniqueUsernameFromEmail } = require('../../../utils/user-username');
 const { createCoreService } = require('@strapi/strapi').factories;
 const crypto = require('crypto');
 const { ORG_ROLE_UID, resolveOrganizationRoleIdForOrg } = require('../../../utils/organization-role');
+const { applyMembershipDepartments } = require('../../../utils/department-context');
 
 module.exports = createCoreService('api::invitation.invitation', ({ strapi }) => ({
   async sendEmailSafe({ to, subject, text, html }) {
@@ -68,6 +69,8 @@ module.exports = createCoreService('api::invitation.invitation', ({ strapi }) =>
     customPermissions = {},
     password,
     sendWelcomeEmail = true,
+    departmentIds = [],
+    primaryDepartmentId = null,
   }) {
     const normalizedEmail = String(email || '').trim().toLowerCase();
     if (!normalizedEmail) {
@@ -125,6 +128,13 @@ module.exports = createCoreService('api::invitation.invitation', ({ strapi }) =>
           joinedAt: new Date(),
           publishedAt: new Date(),
         },
+      });
+    }
+
+    if (departmentIds?.length) {
+      membership = await applyMembershipDepartments(strapi, membership.id, organizationId, {
+        departmentIds,
+        primaryDepartmentId,
       });
     }
 

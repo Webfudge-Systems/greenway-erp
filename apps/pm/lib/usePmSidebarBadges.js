@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@greenways/auth'
 import notificationService from './api/notificationService'
+import { usePmDepartmentRevision } from '../context/PmDepartmentContext'
 
 function getCurrentUserId(user) {
   if (!user) return null
@@ -25,6 +26,7 @@ function isUnread(n) {
  */
 export function usePmSidebarBadges(pollMs = 30000) {
   const { user } = useAuth()
+  const departmentRevision = usePmDepartmentRevision()
   const [inboxCount, setInboxCount] = useState(0)
   const [messageCount, setMessageCount] = useState(0)
 
@@ -61,7 +63,7 @@ export function usePmSidebarBadges(pollMs = 30000) {
     void refresh()
     const id = setInterval(refresh, pollMs)
     return () => clearInterval(id)
-  }, [refresh, pollMs])
+  }, [refresh, pollMs, departmentRevision])
 
   return { inboxCount, messageCount, refresh }
 }

@@ -6,11 +6,13 @@ import PMSidebar from './PMSidebar'
 import PMQuickActionsFab from './PMQuickActionsFab'
 import { canReadCurrentPMPath } from '../lib/rbac'
 import { PM_SITE } from '../lib/site'
+import { PmDepartmentProvider, usePmDepartment } from '../context/PmDepartmentContext'
 
 const PUBLIC_PATHS = ['/login', '/unauthorized', '/coming-soon']
 
-export default function LayoutContent({ children }) {
+function PmWorkspaceShell({ children }) {
   const pathname = usePathname()
+  const { revision } = usePmDepartment()
   const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))
   const hasToken = typeof window !== 'undefined' && Boolean(localStorage.getItem('auth-token'))
   const canView = isPublic || !hasToken || canReadCurrentPMPath(pathname)
@@ -27,7 +29,17 @@ export default function LayoutContent({ children }) {
       deniedDescription="Your current role does not have access to this Project Management module."
       extras={<PMQuickActionsFab />}
     >
-      {children}
+      <div key={`pm-dept-${revision}`} className="min-h-0 flex flex-1 flex-col min-w-0">
+        {children}
+      </div>
     </WorkspaceLayoutContent>
+  )
+}
+
+export default function LayoutContent({ children }) {
+  return (
+    <PmDepartmentProvider>
+      <PmWorkspaceShell>{children}</PmWorkspaceShell>
+    </PmDepartmentProvider>
   )
 }

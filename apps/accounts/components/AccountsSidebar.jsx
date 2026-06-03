@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
+import { useMemo } from 'react'
+import { isOrganizationAdmin } from '../lib/accountsAccess'
 import {
   LayoutDashboard,
   Users,
@@ -12,7 +14,6 @@ import {
   Lock,
   ClipboardList,
   Settings,
-  CreditCard,
   Grid3X3,
   ChevronLeft,
   ChevronRight,
@@ -24,16 +25,31 @@ const items = [
   { label: 'Users', href: '/users', icon: Users },
   { label: 'Roles & Permissions', href: '/roles', icon: Shield },
   { label: 'Departments', href: '/departments', icon: Building2 },
-  { label: 'Teams', href: '/teams', icon: UsersRound },
+  {
+    label: 'Teams',
+    href: '/coming-soon?feature=teams',
+    icon: UsersRound,
+    comingSoon: true,
+  },
   { label: 'Security', href: '/security', icon: Lock },
   { label: 'Audit Logs', href: '/audit-logs', icon: ClipboardList },
   { label: 'Organization', href: '/settings', icon: Settings },
-  { label: 'Billing', href: '/billing', icon: CreditCard },
   { label: 'App Access', href: '/app-access', icon: Grid3X3 },
 ]
 
+function isItemActive(pathname, item) {
+  if (item.comingSoon) return pathname === '/coming-soon'
+  if (item.href === '/') return pathname === '/'
+  return pathname.startsWith(item.href.split('?')[0])
+}
+
 export default function AccountsSidebar({ collapsed = false, onToggle }) {
   const pathname = usePathname()
+  const navItems = useMemo(
+    () => items.filter((item) => item.href !== '/security' || isOrganizationAdmin()),
+    []
+  )
+
   return (
     <div
       className={`${
@@ -84,9 +100,9 @@ export default function AccountsSidebar({ collapsed = false, onToggle }) {
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2">
-        {items.map((item) => {
+        {navItems.map((item) => {
           const Icon = item.icon
-          const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href)
+          const active = isItemActive(pathname, item)
           return (
             <Link
               key={item.href}
@@ -94,12 +110,27 @@ export default function AccountsSidebar({ collapsed = false, onToggle }) {
               className={`flex items-center gap-3 rounded-xl px-3 py-2.5 border transition-colors ${
                 active
                   ? 'bg-brand-primary text-white border-brand-primary/30'
-                  : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                  : item.comingSoon
+                    ? 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
+                    : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
               }`}
-              title={collapsed ? item.label : undefined}
+              title={collapsed ? (item.comingSoon ? `${item.label} (coming soon)` : item.label) : undefined}
             >
               <Icon className="w-4 h-4 shrink-0" />
-              {!collapsed && <span className="text-sm font-medium truncate">{item.label}</span>}
+              {!collapsed && (
+                <span className="flex min-w-0 flex-1 items-center gap-2">
+                  <span className="truncate text-sm font-medium">{item.label}</span>
+                  {item.comingSoon ? (
+                    <span
+                      className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                        active ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+                      }`}
+                    >
+                      Soon
+                    </span>
+                  ) : null}
+                </span>
+              )}
             </Link>
           )
         })}

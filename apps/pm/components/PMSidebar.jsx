@@ -30,6 +30,8 @@ import { canReadPM, canWritePM, canReadClientAccounts } from "../lib/rbac";
 import { canCreateProjectsInPm } from "../lib/pmOrgRoles";
 import { usePmSidebarBadges } from "../lib/usePmSidebarBadges";
 import { PM_SITE } from "../lib/site";
+import DepartmentSwitcher from "./DepartmentSwitcher";
+import { usePmDepartmentRevision } from "../context/PmDepartmentContext";
 
 export default function PMSidebar({
   collapsed = false,
@@ -41,6 +43,7 @@ export default function PMSidebar({
   const searchParams = useSearchParams();
   const router = useRouter();
 
+  const departmentRevision = usePmDepartmentRevision();
   const { inboxCount, messageCount } = usePmSidebarBadges();
   const [projects, setProjects] = useState([]);
   const [loadingProjects, setLoadingProjects] = useState(true);
@@ -69,7 +72,7 @@ export default function PMSidebar({
       }
     };
     fetchProjects();
-  }, []);
+  }, [departmentRevision]);
 
   const mainNavigationItems = [
     {
@@ -298,6 +301,9 @@ export default function PMSidebar({
             </button>
           )}
         </div>
+
+        <DepartmentSwitcher collapsed={!showExpanded} className="mt-3" />
+
         {showExpanded ? (
           <div
             className="mt-3 h-px w-full bg-gradient-to-r from-transparent via-orange-400/50 to-transparent"

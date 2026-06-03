@@ -2,7 +2,16 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { KPICard, Card, Button, LoadingSpinner, formatRelativeTime } from '@greenways/ui'
+import {
+  KPICard,
+  Card,
+  Button,
+  Badge,
+  KPICardsRowSkeleton,
+  WidgetCardSkeleton,
+  DashboardContentLoader,
+  formatRelativeTime,
+} from '@greenways/ui'
 import {
   Users,
   ShieldCheck,
@@ -11,6 +20,8 @@ import {
   Clock3,
   KeyRound,
   ArrowRight,
+  Shield,
+  Zap,
 } from 'lucide-react'
 import AccountsPageHeader from '../../components/AccountsPageHeader'
 import {
@@ -85,6 +96,66 @@ function formatActivityLine(raw) {
     (row.subjectId != null ? `#${row.subjectId}` : '')
   const tail = name ? ` · ${String(name).slice(0, 80)}${String(name).length > 80 ? '…' : ''}` : ''
   return `${verb} ${entity}${tail}`
+}
+
+function pluralCount(n, singular, plural = `${singular}s`) {
+  if (n === 0) return `No ${plural}`
+  return `${n} ${n === 1 ? singular : plural}`
+}
+
+function SectionHeaderIcon({ icon: Icon }) {
+  return (
+    <span
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600 ring-1 ring-orange-100/80"
+      aria-hidden
+    >
+      <Icon className="h-[18px] w-[18px]" />
+    </span>
+  )
+}
+
+function MetricTile({ label, value, hint }) {
+  return (
+    <div className="rounded-xl border border-gray-100 bg-gray-50/80 p-4 shadow-sm transition-colors hover:border-orange-100/80 hover:bg-white">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-orange-700">{label}</p>
+      <p className="mt-1.5 text-2xl font-bold tabular-nums text-gray-900">{value}</p>
+      <p className="mt-2 text-xs leading-relaxed text-gray-500">{hint}</p>
+    </div>
+  )
+}
+
+function QuickActionLink({ label, hint, href }) {
+  return (
+    <Link
+      href={href}
+      className="group flex w-full items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50/90 px-4 py-3 text-left shadow-sm transition-all hover:border-orange-200 hover:bg-orange-50/60 hover:shadow-md"
+    >
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-semibold text-gray-900 group-hover:text-orange-900">
+          {label}
+        </span>
+        <span className="mt-0.5 block text-[11px] text-gray-500">{hint}</span>
+      </span>
+      <ArrowRight className="h-4 w-4 shrink-0 text-gray-400 transition-transform group-hover:translate-x-0.5 group-hover:text-orange-600" />
+    </Link>
+  )
+}
+
+function AccountsDashboardSkeleton() {
+  return (
+    <div className="space-y-6" aria-busy="true" aria-label="Loading dashboard">
+      <DashboardContentLoader message="Loading dashboard…" />
+      <KPICardsRowSkeleton count={4} />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <WidgetCardSkeleton className="lg:col-span-2" minHeight="min-h-[180px]" />
+        <WidgetCardSkeleton minHeight="min-h-[280px]" />
+      </div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <WidgetCardSkeleton minHeight="min-h-[220px]" />
+        <WidgetCardSkeleton minHeight="min-h-[220px]" />
+      </div>
+    </div>
+  )
 }
 
 export default function AccountsHome() {
@@ -226,25 +297,25 @@ export default function AccountsHome() {
       {
         title: 'Active Users',
         value: stats.activeUsers,
-        subtitle: 'Confirmed members in this organization',
+        subtitle: pluralCount(stats.activeUsers, 'member'),
         icon: Users,
       },
       {
         title: 'Roles',
         value: stats.rolesCount,
-        subtitle: 'System + custom roles',
+        subtitle: pluralCount(stats.rolesCount, 'role'),
         icon: ShieldCheck,
       },
       {
         title: 'Departments',
         value: stats.departmentsCount,
-        subtitle: 'Org structure units',
+        subtitle: pluralCount(stats.departmentsCount, 'department'),
         icon: Building2,
       },
       {
         title: 'Teams',
         value: stats.teamsCount,
-        subtitle: 'Delivery and function teams',
+        subtitle: pluralCount(stats.teamsCount, 'team'),
         icon: UserRoundCheck,
       },
     ],
@@ -270,7 +341,7 @@ export default function AccountsHome() {
   )
 
   return (
-    <div className="p-4 space-y-4 bg-white min-h-full">
+    <div className="min-h-full bg-gradient-to-b from-slate-50 via-gray-50 to-slate-50/90 p-3 sm:space-y-6 sm:p-4 md:p-6">
       <AccountsPageHeader
         title={`${organizationName} Dashboard`}
         subtitle="Organization identity, access, and security overview."
@@ -279,113 +350,126 @@ export default function AccountsHome() {
       />
 
       {loading ? (
-        <div className="flex min-h-[200px] items-center justify-center rounded-xl border border-gray-100 bg-gray-50/80 py-16">
-          <LoadingSpinner size="lg" message="Loading dashboard…" />
-        </div>
+        <AccountsDashboardSkeleton />
       ) : (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             {cards.map((card) => (
               <KPICard key={card.title} {...card} colorScheme="orange" />
             ))}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <Card
-              glass
+              variant="elevated"
               className="lg:col-span-2"
               title="Security Health"
               subtitle="Current workspace security posture and action queue"
+              actions={<SectionHeaderIcon icon={Shield} />}
             >
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="rounded-xl border border-gray-200 p-4 bg-white">
-                  <p className="text-xs text-gray-500 uppercase">MFA adoption</p>
-                  <p className="text-2xl font-semibold text-gray-900 mt-1">—</p>
-                  <p className="text-xs text-gray-500 mt-2">Not reported by the API yet. Track MFA in your IdP.</p>
-                </div>
-                <div className="rounded-xl border border-gray-200 p-4 bg-white">
-                  <p className="text-xs text-gray-500 uppercase">Pending invites</p>
-                  <p className="text-2xl font-semibold text-gray-900 mt-1">{stats.pendingInvites}</p>
-                  <p className="text-xs text-gray-500 mt-2">Users awaiting email confirmation</p>
-                </div>
-                <div className="rounded-xl border border-gray-200 p-4 bg-white">
-                  <p className="text-xs text-gray-500 uppercase">Open incidents</p>
-                  <p className="text-2xl font-semibold text-gray-900 mt-1">0</p>
-                  <p className="text-xs text-gray-500 mt-2">No incidents recorded for this workspace</p>
-                </div>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                <MetricTile
+                  label="MFA adoption"
+                  value="—"
+                  hint="Not reported by the API yet. Track MFA in your IdP."
+                />
+                <MetricTile
+                  label="Pending invites"
+                  value={stats.pendingInvites}
+                  hint="Users awaiting email confirmation"
+                />
+                <MetricTile
+                  label="Open incidents"
+                  value={0}
+                  hint="No incidents recorded for this workspace"
+                />
               </div>
             </Card>
-            <Card glass title="Quick Actions" subtitle="Frequently used admin actions">
+
+            <Card
+              variant="elevated"
+              title="Quick Actions"
+              subtitle="Frequently used admin actions"
+              actions={<SectionHeaderIcon icon={Zap} />}
+            >
               <div className="space-y-2">
                 {quickActions.map((action) => (
-                  <Button
-                    key={action.href}
-                    as={Link}
-                    href={action.href}
-                    variant="secondary"
-                    className="w-full justify-between"
-                  >
-                    <span className="flex flex-col items-start gap-0.5">
-                      <span>{action.label}</span>
-                      <span className="text-[11px] font-normal text-gray-500">{action.hint}</span>
-                    </span>
-                    <ArrowRight className="w-4 h-4 shrink-0" />
-                  </Button>
+                  <QuickActionLink key={action.href} {...action} />
                 ))}
               </div>
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card
-              glass
+              variant="elevated"
               title="Recent workspace activity"
               subtitle="Latest CRM & PM timeline entries (organization feed)"
-              actions={<Clock3 className="w-5 h-5 text-gray-500" />}
+              actions={<SectionHeaderIcon icon={Clock3} />}
             >
-              {activityFetchFailed ? (
-                <p className="text-sm text-gray-600">Could not load activity. Try again from Audit Logs.</p>
-              ) : recentActivity.length === 0 ? (
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-600">No timeline entries yet.</p>
-                  <Button as={Link} href="/audit-logs" variant="ghost" size="sm" className="px-0 text-orange-600">
-                    Open audit logs →
-                  </Button>
-                </div>
-              ) : (
-                <ul className="divide-y divide-gray-100 rounded-lg border border-gray-100 bg-white/80">
-                  {recentActivity.map((row, idx) => {
-                    const flat = row?.attributes ? { id: row.id, ...row.attributes } : row
-                    const at = flat?.createdAt || flat?.updatedAt || flat?.timestamp
-                    return (
-                      <li key={flat?.id ?? idx} className="flex gap-3 px-3 py-2.5 text-sm">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-gray-800 leading-snug">{formatActivityLine(row)}</p>
-                        </div>
-                        <time className="shrink-0 text-xs text-gray-500 tabular-nums" dateTime={at || undefined}>
-                          {at ? formatRelativeTime(at) : '—'}
-                        </time>
-                      </li>
-                    )
-                  })}
-                </ul>
-              )}
+              <div className="overflow-hidden rounded-xl border border-gray-100 bg-gray-50/60">
+                {activityFetchFailed ? (
+                  <p className="px-4 py-6 text-sm text-gray-600">
+                    Could not load activity. Try again from Audit Logs.
+                  </p>
+                ) : recentActivity.length === 0 ? (
+                  <div className="space-y-2 px-4 py-6">
+                    <p className="text-sm text-gray-600">No timeline entries yet.</p>
+                    <Button as={Link} href="/audit-logs" variant="ghost" size="sm" className="px-0 text-orange-600">
+                      Open audit logs →
+                    </Button>
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-gray-100">
+                    {recentActivity.map((row, idx) => {
+                      const flat = row?.attributes ? { id: row.id, ...row.attributes } : row
+                      const at = flat?.createdAt || flat?.updatedAt || flat?.timestamp
+                      return (
+                        <li
+                          key={flat?.id ?? idx}
+                          className="flex gap-3 px-4 py-3 text-sm transition-colors hover:bg-white/80"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="leading-snug text-gray-800">{formatActivityLine(row)}</p>
+                          </div>
+                          <time
+                            className="shrink-0 text-xs tabular-nums text-gray-500"
+                            dateTime={at || undefined}
+                          >
+                            {at ? formatRelativeTime(at) : '—'}
+                          </time>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                )}
+              </div>
               {!activityFetchFailed && recentActivity.length > 0 ? (
-                <div className="mt-3 flex justify-end">
+                <div className="mt-4 flex justify-end">
                   <Button as={Link} href="/audit-logs" variant="ghost" size="sm" className="text-orange-600">
                     View all activity
                   </Button>
                 </div>
               ) : null}
             </Card>
+
             <Card
-              glass
+              variant="elevated"
               title="App Access Summary"
               subtitle="Apps linked to this organization"
-              actions={<KeyRound className="w-5 h-5 text-gray-500" />}
+              actions={<SectionHeaderIcon icon={KeyRound} />}
             >
-              <p className="text-sm text-gray-700 leading-relaxed">{appAccessDescription}</p>
-              <div className="mt-4 flex flex-wrap gap-2">
+              {subscriptionsSummary.length > 0 ? (
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {subscriptionsSummary.map((app) => (
+                    <Badge key={app} variant="orange" size="md">
+                      {app}
+                    </Badge>
+                  ))}
+                </div>
+              ) : null}
+              <p className="text-sm leading-relaxed text-gray-700">{appAccessDescription}</p>
+              <div className="mt-5 flex flex-wrap gap-2">
                 <Button as={Link} href="/app-access" variant="outline" size="sm">
                   View app access
                 </Button>
@@ -395,7 +479,7 @@ export default function AccountsHome() {
               </div>
             </Card>
           </div>
-        </>
+        </div>
       )}
     </div>
   )

@@ -97,6 +97,7 @@ class AuthService {
         if (!existingOrgId && orgs.length > 0) {
           localStorage.setItem('current-org-id', String(orgs[0].id));
         }
+        this.syncDepartmentForCurrentOrg();
 
         // Also store in cookies for middleware access
         document.cookie = `auth-token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
@@ -240,6 +241,7 @@ class AuthService {
         if (!existingOrgId && orgs.length > 0) {
           localStorage.setItem('current-org-id', String(orgs[0].id));
         }
+        this.syncDepartmentForCurrentOrg();
 
         // Also store in cookies for middleware access
         document.cookie = `auth-token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
@@ -301,6 +303,7 @@ class AuthService {
             localStorage.setItem('auth-user', JSON.stringify(merged));
             if (organizations.length > 0) {
               localStorage.setItem('auth-organizations', JSON.stringify(organizations));
+              this.syncDepartmentForCurrentOrg();
             }
             return merged;
           }
@@ -329,6 +332,11 @@ class AuthService {
     localStorage.removeItem('user-role');
     localStorage.removeItem('auth-organizations');
     localStorage.removeItem('current-org-id');
+    localStorage.removeItem('current-department-id');
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem('pm-department-options');
+      sessionStorage.removeItem('pm-department-options-org');
+    }
 
     if (typeof document !== 'undefined') {
       document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
@@ -402,9 +410,21 @@ class AuthService {
 
   getCurrentOrgRole() {
     const org = this.getCurrentOrg();
+    const name = org?.role || 'Member';
+    let code = org?.roleCode;
+    if (!code && typeof name === 'string') {
+      const normalized = name.trim().toLowerCase();
+      if (
+        normalized === 'admin' ||
+        normalized === 'organization admin' ||
+        normalized === 'platform admin'
+      ) {
+        code = 'admin';
+      }
+    }
     return {
-      name: org?.role || 'Member',
-      code: org?.roleCode || 'member',
+      name,
+      code: code || 'member',
       accessLevel: org?.accessLevel || null,
     };
   }
@@ -449,7 +469,99 @@ class AuthService {
     const found = orgs.find((o) => o.id === orgId || o.id === parseInt(orgId, 10));
     if (!found) return false;
     localStorage.setItem('current-org-id', String(found.id));
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem('pm-department-options');
+      sessionStorage.removeItem('pm-department-options-org');
+    }
+    this.syncDepartmentForCurrentOrg();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('gw:org-changed'));
+    }
     return true;
+  }
+
+  /**
+   * Departments assigned to the user in the active organization (from login payload).
+   * @returns {Array<{id:number,name:string,isActive?:boolean}>}
+   */
+  getDepartmentsForCurrentOrg() {
+    const org = this.getCurrentOrg();
+    return Array.isArray(org?.departments) ? org.departments : [];
+  }
+
+  /**
+   * PM sidebar options: membership departments, or org-wide list when none assigned.
+   */
+  getSwitchableDepartments() {
+    const assigned = this.getDepartmentsForCurrentOrg();
+    if (assigned.length) return assigned;
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = sessionStorage.getItem('pm-department-options');
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  setSwitchableDepartments(departments, orgId = null) {
+    if (typeof window === 'undefined') return;
+    const list = Array.isArray(departments) ? departments : [];
+    const keyOrg = orgId ?? this.getCurrentOrgId();
+    sessionStorage.setItem('pm-department-options', JSON.stringify(list));
+    if (keyOrg) sessionStorage.setItem('pm-department-options-org', String(keyOrg));
+  }
+
+  getCurrentDepartmentId() {
+    if (typeof window === 'undefined') return null;
+    const id = localStorage.getItem('current-department-id');
+    return id ? parseInt(id, 10) : null;
+  }
+
+  getCurrentDepartment() {
+    const id = this.getCurrentDepartmentId();
+    if (!id) return null;
+    return this.getSwitchableDepartments().find((d) => d.id === id) || null;
+  }
+
+  /**
+   * Switch active department context for PM / API headers.
+   * @param {number} departmentId
+   * @returns {boolean}
+   */
+  setCurrentDepartment(departmentId) {
+    if (typeof window === 'undefined') return false;
+    const depts = this.getSwitchableDepartments();
+    if (!depts.length) {
+      localStorage.removeItem('current-department-id');
+      return true;
+    }
+    const found = depts.find(
+      (d) => d.id === departmentId || d.id === parseInt(departmentId, 10)
+    );
+    if (!found) return false;
+    localStorage.setItem('current-department-id', String(found.id));
+    return true;
+  }
+
+  /**
+   * Pick primary or first department for the active org.
+   */
+  syncDepartmentForCurrentOrg() {
+    if (typeof window === 'undefined') return;
+    const org = this.getCurrentOrg();
+    const depts = this.getSwitchableDepartments();
+    if (!depts.length) {
+      localStorage.removeItem('current-department-id');
+      return;
+    }
+    const primary = org?.primaryDepartmentId;
+    const existing = this.getCurrentDepartmentId();
+    if (existing && depts.some((d) => d.id === existing)) return;
+    const pick =
+      (primary && depts.some((d) => d.id === primary) ? primary : null) || depts[0]?.id;
+    if (pick) localStorage.setItem('current-department-id', String(pick));
   }
 
   /**

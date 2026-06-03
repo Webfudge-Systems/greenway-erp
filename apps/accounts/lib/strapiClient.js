@@ -30,6 +30,11 @@ class StrapiClient {
     return localStorage.getItem('current-org-id')
   }
 
+  getCurrentDepartmentId() {
+    if (typeof window === 'undefined') return null
+    return localStorage.getItem('current-department-id')
+  }
+
   buildQueryString(params = {}) {
     const parts = []
     Object.entries(params).forEach(([k, v]) => {
@@ -42,12 +47,14 @@ class StrapiClient {
   async request(endpoint, options = {}) {
     const token = this.getToken()
     const orgId = this.getCurrentOrgId()
+    const departmentId = this.getCurrentDepartmentId()
     const response = await fetch(`${this.baseURL}/api${endpoint}`, {
       method: options.method || 'GET',
       headers: {
         'Content-Type': 'application/json',
         ...(token && { Authorization: `Bearer ${token}` }),
         ...(orgId && { 'X-Organization-Id': orgId }),
+        ...(departmentId && { 'X-Department-Id': departmentId }),
       },
       ...(options.body ? { body: JSON.stringify(options.body) } : {}),
     })

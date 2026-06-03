@@ -19,6 +19,8 @@ class UsersService {
     directAdd = false,
     directPassword,
     sendWelcomeEmail = true,
+    departmentIds = [],
+    primaryDepartmentId = null,
   }) {
     if (typeof window === 'undefined') throw new Error('Invite is only available in browser')
 
@@ -35,6 +37,8 @@ class UsersService {
       directAdd,
       directPassword,
       sendWelcomeEmail,
+      departmentIds,
+      primaryDepartmentId,
     })
   }
 
@@ -45,6 +49,8 @@ class UsersService {
     status,
     email,
     username,
+    departmentIds,
+    primaryDepartmentId,
   }) {
     if (typeof window === 'undefined') throw new Error('Update is only available in browser')
 
@@ -67,6 +73,12 @@ class UsersService {
     }
     if (username != null && String(username).trim() !== '') {
       body.username = String(username).trim()
+    }
+    if (departmentIds !== undefined) {
+      body.departmentIds = departmentIds
+    }
+    if (primaryDepartmentId !== undefined && primaryDepartmentId !== null && primaryDepartmentId !== '') {
+      body.primaryDepartmentId = primaryDepartmentId
     }
 
     return strapiClient.patch(`/organizations/${orgId}/users/${membershipId}`, body)

@@ -107,6 +107,11 @@
       "relation": "manyToOne",
       "target": "api::organization.organization"
     },
+    "department": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::department.department"
+    },
     "recurrenceFrequency": {
       "type": "enumeration",
       "enum": ["none", "daily", "weekly", "monthly", "custom"],

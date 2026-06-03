@@ -133,14 +133,12 @@ export default function AppAccessPage() {
         <KPICard
           title={appsMeta?.crm?.label || 'CRM'}
           value={crmEnabled ? 'Enabled' : 'Disabled'}
-          subtitle={`${crmModuleCount} RBAC modules mapped`}
           icon={LayoutGrid}
           colorScheme="orange"
         />
         <KPICard
           title={appsMeta?.pm?.label || 'Project Management'}
           value={pmEnabled ? 'Enabled' : 'Disabled'}
-          subtitle={`${pmModuleCount} RBAC modules mapped`}
           icon={ShieldCheck}
           colorScheme="orange"
         />

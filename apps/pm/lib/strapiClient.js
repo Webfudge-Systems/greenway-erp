@@ -39,10 +39,17 @@ class StrapiClient {
     return id ? id : null;
   }
 
+  getCurrentDepartmentId() {
+    if (typeof window === 'undefined') return null;
+    const id = localStorage.getItem('current-department-id');
+    return id ? id : null;
+  }
+
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}/api${endpoint}`;
     const token = this.getToken();
     const orgId = this.getCurrentOrgId();
+    const departmentId = this.getCurrentDepartmentId();
     const { headers: optionHeaders, body, ...rest } = options;
 
     const config = {
@@ -52,6 +59,7 @@ class StrapiClient {
         'Content-Type': 'application/json',
         ...(token && { Authorization: `Bearer ${token}` }),
         ...(orgId && { 'X-Organization-Id': orgId }),
+        ...(departmentId && { 'X-Department-Id': departmentId }),
         ...(optionHeaders && typeof optionHeaders === 'object' ? optionHeaders : {}),
       },
     };

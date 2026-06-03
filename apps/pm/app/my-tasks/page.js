@@ -69,6 +69,7 @@ import taskService from '../../lib/api/taskService';
 import taskCommentService from '../../lib/api/taskCommentService';
 import { transformProject, transformTask, transformUser } from '../../lib/api/dataTransformers';
 import { usePmTableSort } from '../../hooks/usePmTableSort';
+import { usePmDepartmentRevision } from '../../context/PmDepartmentContext';
 import { TableSortDropdown as PmTableSortDropdown } from '@greenways/ui';
 
 const TABLE_SORT_STORAGE_KEY = 'pm.myTasks.tableSort';
@@ -299,6 +300,7 @@ export default function MyTasksPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
+  const departmentRevision = usePmDepartmentRevision();
   const openedCreateFromQuery = useRef(false);
   const [allTasks, setAllTasks] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -354,7 +356,7 @@ export default function MyTasksPage() {
     } finally {
       setLoading(false);
     }
-  }, [filters.priority, filters.projectId, getUserId]);
+  }, [filters.priority, filters.projectId, getUserId, departmentRevision]);
 
   const currentUserId = useMemo(() => {
     const id = getUserId();
@@ -479,7 +481,7 @@ export default function MyTasksPage() {
     } catch (error) {
       console.error('Load lookups error:', error);
     }
-  }, []);
+  }, [departmentRevision]);
 
   useEffect(() => {
     loadTasks();

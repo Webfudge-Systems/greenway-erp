@@ -877,10 +877,10 @@ export default function AuditLogsPage() {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        <KPICard title="Total Events" value={counts.total} subtitle="Who did what, when and where" icon={ClipboardList} colorScheme="orange" />
-        <KPICard title="Authentication" value={counts.auth} subtitle="Login, logout, reset, session changes" icon={ShieldCheck} colorScheme="orange" />
-        <KPICard title="Data Changes" value={counts.dataChange} subtitle="Create, update, delete, restore operations" icon={Activity} colorScheme="orange" />
-        <KPICard title="High Risk" value={counts.highRisk} subtitle="Critical and high severity actions" icon={AlertTriangle} colorScheme="orange" />
+        <KPICard title="Total Events" value={counts.total} icon={ClipboardList} colorScheme="orange" />
+        <KPICard title="Authentication" value={counts.auth} icon={ShieldCheck} colorScheme="orange" />
+        <KPICard title="Data Changes" value={counts.dataChange} icon={Activity} colorScheme="orange" />
+        <KPICard title="High Risk" value={counts.highRisk} icon={AlertTriangle} colorScheme="orange" />
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-gray-50/90 shadow-sm overflow-hidden">

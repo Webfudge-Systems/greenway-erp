@@ -17,7 +17,14 @@ import {
   TabsWithActions,
 } from '@greenways/ui'
 import AccountsPageHeader from '../../components/AccountsPageHeader'
-import { rolesService, usersService } from '../../lib/api'
+import DepartmentPillMultiSelect from '../../components/DepartmentPillMultiSelect'
+import { departmentsService, rolesService, usersService } from '../../lib/api'
+
+function formatDepartmentLabels(user) {
+  const list = Array.isArray(user?.departments) ? user.departments : []
+  if (!list.length) return '—'
+  return list.map((d) => d.name || `Dept ${d.id}`).join(', ')
+}
 
 const ITEMS_PER_PAGE = 15
 
@@ -87,6 +94,31 @@ export default function UsersPage() {
   const [rowActionMenu, setRowActionMenu] = useState(null)
   const [suspendTargetUser, setSuspendTargetUser] = useState(null)
   const [suspendSubmitting, setSuspendSubmitting] = useState(false)
+  const [allDepartments, setAllDepartments] = useState([])
+  const [inviteDepartmentIds, setInviteDepartmentIds] = useState([])
+  const [invitePrimaryDepartmentId, setInvitePrimaryDepartmentId] = useState(null)
+  const [editDepartmentIds, setEditDepartmentIds] = useState([])
+  const [editPrimaryDepartmentId, setEditPrimaryDepartmentId] = useState(null)
+
+  const toggleInviteDepartment = useCallback((deptId) => {
+    setInviteDepartmentIds((prev) => {
+      const next = prev.includes(deptId) ? prev.filter((id) => id !== deptId) : [...prev, deptId]
+      if (!next.includes(invitePrimaryDepartmentId)) {
+        setInvitePrimaryDepartmentId(next[0] ?? null)
+      }
+      return next
+    })
+  }, [invitePrimaryDepartmentId])
+
+  const toggleEditDepartment = useCallback((deptId) => {
+    setEditDepartmentIds((prev) => {
+      const next = prev.includes(deptId) ? prev.filter((id) => id !== deptId) : [...prev, deptId]
+      if (!next.includes(editPrimaryDepartmentId)) {
+        setEditPrimaryDepartmentId(next[0] ?? null)
+      }
+      return next
+    })
+  }, [editPrimaryDepartmentId])
 
   const handleInviteUser = useCallback(() => {
     setInviteEmail('')
@@ -95,9 +127,32 @@ export default function UsersPage() {
     setInviteRoleSelection(defaultRole ? roleOptionValue(defaultRole) : 'code:member')
     setDirectAdd(false)
     setDirectPassword('')
+    setInviteDepartmentIds([])
+    setInvitePrimaryDepartmentId(null)
     setInviteError('')
     setShowInviteModal(true)
   }, [roles])
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const rows = await departmentsService.list()
+        if (!cancelled) {
+          setAllDepartments(
+            (rows || [])
+              .map((d) => ({ id: d.id, name: d.name || '', isActive: d.isActive !== false }))
+              .filter((d) => d.isActive)
+          )
+        }
+      } catch {
+        if (!cancelled) setAllDepartments([])
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -235,6 +290,8 @@ export default function UsersPage() {
         directAdd,
         directPassword: directPassword.trim() || undefined,
         sendWelcomeEmail: true,
+        departmentIds: inviteDepartmentIds,
+        primaryDepartmentId: invitePrimaryDepartmentId,
       })
       setShowInviteModal(false)
       await fetchUsers()
@@ -243,7 +300,15 @@ export default function UsersPage() {
     } finally {
       setInviteSubmitting(false)
     }
-  }, [directAdd, directPassword, fetchUsers, inviteEmail, inviteRoleSelection])
+  }, [
+    directAdd,
+    directPassword,
+    fetchUsers,
+    inviteDepartmentIds,
+    inviteEmail,
+    invitePrimaryDepartmentId,
+    inviteRoleSelection,
+  ])
 
   const openEditModal = useCallback(
     (user) => {
@@ -258,6 +323,13 @@ export default function UsersPage() {
         setEditRoleSelection(match ? roleOptionValue(match) : `code:${code}`)
       }
       setEditStatus(getUserStatus(user))
+      const deptIds = Array.isArray(user?.departmentIds)
+        ? user.departmentIds
+        : Array.isArray(user?.departments)
+          ? user.departments.map((d) => d.id)
+          : []
+      setEditDepartmentIds(deptIds)
+      setEditPrimaryDepartmentId(user?.primaryDepartmentId || deptIds[0] || null)
       setEditError('')
     },
     [roles]
@@ -295,6 +367,8 @@ export default function UsersPage() {
         status: editStatus,
         email,
         username: name,
+        departmentIds: editDepartmentIds,
+        primaryDepartmentId: editPrimaryDepartmentId,
       })
       setEditUser(null)
       await fetchUsers()
@@ -303,7 +377,16 @@ export default function UsersPage() {
     } finally {
       setEditSubmitting(false)
     }
-  }, [editEmail, editName, editRoleSelection, editStatus, editUser, fetchUsers])
+  }, [
+    editDepartmentIds,
+    editEmail,
+    editName,
+    editPrimaryDepartmentId,
+    editRoleSelection,
+    editStatus,
+    editUser,
+    fetchUsers,
+  ])
 
   const toggleUserStatus = useCallback(
     async (user, nextStatus) => {
@@ -375,6 +458,13 @@ export default function UsersPage() {
         label: 'ROLE',
         render: (_, user) => (
           <TableCellRole roleLabel={user?.role?.name || user?.role || 'Member'} />
+        ),
+      },
+      {
+        key: 'departments',
+        label: 'DEPARTMENTS',
+        render: (_, user) => (
+          <span className="text-sm text-gray-700 min-w-[140px]">{formatDepartmentLabels(user)}</span>
         ),
       },
       {
@@ -481,10 +571,10 @@ export default function UsersPage() {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        <KPICard title="Total Users" value={stats.total} subtitle="Organization members" icon={Users} colorScheme="orange" />
-        <KPICard title="Active Users" value={stats.active} subtitle="Confirmed and active access" icon={UserCheck} colorScheme="orange" />
-        <KPICard title="Invited Users" value={stats.invited} subtitle="Pending account confirmation" icon={Clock3} colorScheme="orange" />
-        <KPICard title="Suspended Users" value={stats.suspended} subtitle="Blocked from accessing apps" icon={UserX} colorScheme="orange" />
+        <KPICard title="Total Users" value={stats.total} icon={Users} colorScheme="orange" />
+        <KPICard title="Active Users" value={stats.active} icon={UserCheck} colorScheme="orange" />
+        <KPICard title="Invited Users" value={stats.invited} icon={Clock3} colorScheme="orange" />
+        <KPICard title="Suspended Users" value={stats.suspended} icon={UserX} colorScheme="orange" />
       </div>
 
       <div className="relative">
@@ -580,6 +670,16 @@ export default function UsersPage() {
               ))}
             </select>
           </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700">Departments</label>
+            <DepartmentPillMultiSelect
+              departments={allDepartments}
+              selectedIds={inviteDepartmentIds}
+              primaryId={invitePrimaryDepartmentId}
+              onToggle={toggleInviteDepartment}
+              onPrimaryChange={setInvitePrimaryDepartmentId}
+            />
+          </div>
           <label className="flex items-center gap-2 text-sm text-gray-700">
             <input
               type="checkbox"
@@ -660,6 +760,16 @@ export default function UsersPage() {
                 </option>
               ))}
             </select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-gray-700">Departments</label>
+            <DepartmentPillMultiSelect
+              departments={allDepartments}
+              selectedIds={editDepartmentIds}
+              primaryId={editPrimaryDepartmentId}
+              onToggle={toggleEditDepartment}
+              onPrimaryChange={setEditPrimaryDepartmentId}
+            />
           </div>
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-gray-700">Status</label>

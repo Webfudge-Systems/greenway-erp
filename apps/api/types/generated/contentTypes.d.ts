@@ -797,6 +797,10 @@ export interface ApiDepartmentDepartment extends Struct.CollectionTypeSchema {
       'manyToOne',
       'api::organization.organization'
     >;
+    organizationUsers: Schema.Attribute.Relation<
+      'manyToMany',
+      'api::organization-user.organization-user'
+    >;
     parent: Schema.Attribute.Relation<
       'manyToOne',
       'api::department.department'
@@ -1291,6 +1295,10 @@ export interface ApiOrganizationUserOrganizationUser
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     customPermissions: Schema.Attribute.JSON & Schema.Attribute.DefaultTo<{}>;
+    departments: Schema.Attribute.Relation<
+      'manyToMany',
+      'api::department.department'
+    >;
     isActive: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
     joinedAt: Schema.Attribute.DateTime;
     lastAccessAt: Schema.Attribute.DateTime;
@@ -1303,6 +1311,10 @@ export interface ApiOrganizationUserOrganizationUser
     organization: Schema.Attribute.Relation<
       'manyToOne',
       'api::organization.organization'
+    >;
+    primaryDepartment: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::department.department'
     >;
     publishedAt: Schema.Attribute.DateTime;
     role: Schema.Attribute.Relation<
@@ -1468,6 +1480,10 @@ export interface ApiProjectProject extends Struct.CollectionTypeSchema {
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    department: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::department.department'
+    >;
     description: Schema.Attribute.Text;
     endDate: Schema.Attribute.DateTime;
     icon: Schema.Attribute.String;
@@ -1718,6 +1734,10 @@ export interface ApiTaskTask extends Struct.CollectionTypeSchema {
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     deal: Schema.Attribute.Relation<'manyToOne', 'api::deal.deal'>;
+    department: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::department.department'
+    >;
     description: Schema.Attribute.Text;
     leadCompany: Schema.Attribute.Relation<
       'manyToOne',

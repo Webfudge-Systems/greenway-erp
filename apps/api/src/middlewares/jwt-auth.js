@@ -3,6 +3,7 @@
 const jwt = require('jsonwebtoken');
 const { membershipSummary } = require('../utils/rbac');
 const rbac = require('../constants/rbac-app-matrix');
+const { resolveDepartmentContext } = require('../utils/department-context');
 
 // JWT secret - use environment variable or fallback
 const JWT_SECRET = process.env.JWT_SECRET || 'myJwtSecret123456789012345678901234567890';
@@ -64,7 +65,11 @@ module.exports = (config, { strapi }) => {
               {
                 filters: { user: user.id, organization: orgId, isActive: true },
                 limit: 1,
-                populate: { role: true },
+                populate: {
+                  role: true,
+                  departments: { fields: ['id', 'name', 'isActive'] },
+                  primaryDepartment: { fields: ['id', 'name', 'isActive'] },
+                },
               }
             );
             if (membership.length > 0) {
@@ -89,7 +94,12 @@ module.exports = (config, { strapi }) => {
               filters: { user: user.id, isActive: true },
               sort: { joinedAt: 'ASC' },
               limit: 1,
-              populate: { organization: true, role: true },
+              populate: {
+                organization: true,
+                role: true,
+                departments: { fields: ['id', 'name', 'isActive'] },
+                primaryDepartment: { fields: ['id', 'name', 'isActive'] },
+              },
             }
           );
           if (firstMembership.length > 0 && firstMembership[0].organization) {
@@ -103,6 +113,8 @@ module.exports = (config, { strapi }) => {
             ctx.state.effectivePermissions = summary.permissions;
           }
         }
+
+        await resolveDepartmentContext(strapi, ctx);
       }
 
       return await next();
