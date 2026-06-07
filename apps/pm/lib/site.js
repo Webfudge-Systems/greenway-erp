@@ -4,6 +4,7 @@ const siteUrl = (process.env.NEXT_PUBLIC_PM_APP_URL || 'http://localhost:3002').
 
 export const PM_SITE = {
   ...WEBFUDGE_BRAND,
+  productName: 'Fudge ERP',
   /** SEO / metadata product name */
   name: 'Greenways PM',
   shortName: 'Greenways PM',

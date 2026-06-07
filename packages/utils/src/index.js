@@ -13,3 +13,5 @@ export {
   mergeTaskListsForCalendar,
   formatRecurrenceSummaryLine,
 } from './workspace-calendar';
+
+export { listCacheBust, strapiRowId, paginateStrapiList } from './api/paginateStrapiList';

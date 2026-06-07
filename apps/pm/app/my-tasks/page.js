@@ -11,6 +11,7 @@ import {
   KPICard,
   LoadingSpinner,
   Modal,
+  Pagination,
   Select,
   Table,
   TableCellCreated,
@@ -71,8 +72,15 @@ import { transformProject, transformTask, transformUser } from '../../lib/api/da
 import { usePmTableSort } from '../../hooks/usePmTableSort';
 import { usePmDepartmentRevision } from '../../context/PmDepartmentContext';
 import { TableSortDropdown as PmTableSortDropdown } from '@greenways/ui';
+import {
+  buildChildrenByParentId,
+  enrichTasksWithProjectManager,
+  filterMajorTasks,
+  mergeTasksById,
+} from '../../lib/taskListUtils';
 
 const TABLE_SORT_STORAGE_KEY = 'pm.myTasks.tableSort';
+const TABLE_PAGE_SIZE = 12;
 
 const STATUS_TABS = [
   { id: 'MY_TASKS', label: 'My Tasks' },
@@ -302,6 +310,7 @@ export default function MyTasksPage() {
   const { user } = useAuth();
   const departmentRevision = usePmDepartmentRevision();
   const openedCreateFromQuery = useRef(false);
+  const loadTasksRequestIdRef = useRef(0);
   const [allTasks, setAllTasks] = useState([]);
   const [projects, setProjects] = useState([]);
   const [users, setUsers] = useState([]);
@@ -331,6 +340,7 @@ export default function MyTasksPage() {
   const [commentLoadingTaskId, setCommentLoadingTaskId] = useState(null);
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [commentError, setCommentError] = useState('');
+  const [tablePage, setTablePage] = useState(1);
   const toolbarRef = useRef(null);
   const columnDragKeyRef = useRef(null);
   const columnDropIndicatorRef = useRef(null);
@@ -340,23 +350,30 @@ export default function MyTasksPage() {
     return u?.id || user?.id || null;
   }, [user]);
 
-  const loadTasks = useCallback(async () => {
+  const loadTasks = useCallback(async ({ silent = false, mergeWithPrevious = false } = {}) => {
+    const requestId = ++loadTasksRequestIdRef.current;
     try {
-      setLoading(true);
-      const params = { pageSize: 200, sort: 'updatedAt:desc' };
+      if (!silent) setLoading(true);
+      const params = { pageSize: 500, sort: 'updatedAt:desc' };
       if (filters.priority) params.priority = filters.priority;
       if (filters.projectId) params.projectId = filters.projectId;
 
-      const res = await taskService.getAllTasks(params);
-      const list = (res?.data || []).map(transformTask).filter(Boolean);
-      setAllTasks(list);
+      const rawList = await taskService.fetchAllTasks(params);
+      if (requestId !== loadTasksRequestIdRef.current) return;
+      const list = rawList.map(transformTask).filter(Boolean);
+      if (mergeWithPrevious) {
+        setAllTasks((prev) => mergeTasksById(list, prev));
+      } else {
+        setAllTasks(list);
+      }
     } catch (error) {
       console.error('Load tasks error:', error);
-      setAllTasks([]);
+      if (requestId !== loadTasksRequestIdRef.current) return;
+      if (!silent) setAllTasks([]);
     } finally {
-      setLoading(false);
+      if (requestId === loadTasksRequestIdRef.current && !silent) setLoading(false);
     }
-  }, [filters.priority, filters.projectId, getUserId, departmentRevision]);
+  }, [filters.priority, filters.projectId, departmentRevision]);
 
   const currentUserId = useMemo(() => {
     const id = getUserId();
@@ -382,8 +399,15 @@ export default function MyTasksPage() {
     [isMyTask]
   );
 
+  const allTasksEnriched = useMemo(
+    () => enrichTasksWithProjectManager(allTasks, projects),
+    [allTasks, projects]
+  );
+
+  const majorTasks = useMemo(() => filterMajorTasks(allTasksEnriched), [allTasksEnriched]);
+
   const filteredTasks = useMemo(() => {
-    let list = [...allTasks];
+    let list = [...allTasksEnriched];
     if (activeTab !== 'all') {
       if (activeTab === 'MY_TASKS') list = list.filter(isActiveMyTask);
       else if (activeTab === 'OVERDUE') list = list.filter(isTaskOverdue);
@@ -399,12 +423,9 @@ export default function MyTasksPage() {
       });
     }
     return list;
-  }, [allTasks, activeTab, searchQuery, isActiveMyTask]);
+  }, [allTasksEnriched, activeTab, searchQuery, isActiveMyTask]);
 
-  const tableRootTasks = useMemo(() => {
-    const idSet = new Set(allTasks.map((t) => t.id).filter((x) => x != null));
-    return filteredTasks.filter((t) => !t.parentId || !idSet.has(t.parentId));
-  }, [allTasks, filteredTasks]);
+  const tableRootTasks = useMemo(() => filterMajorTasks(filteredTasks), [filteredTasks]);
 
   const {
     sortedData: sortedTableRootTasks,
@@ -424,15 +445,19 @@ export default function MyTasksPage() {
     data: tableRootTasks,
   });
 
+  const totalTableRows = sortedTableRootTasks.length;
+  const totalTablePages = Math.max(1, Math.ceil(totalTableRows / TABLE_PAGE_SIZE));
+  const paginatedTableTasks = useMemo(() => {
+    if (taskViewMode !== 'table') return sortedTableRootTasks;
+    const start = (tablePage - 1) * TABLE_PAGE_SIZE;
+    return sortedTableRootTasks.slice(start, start + TABLE_PAGE_SIZE);
+  }, [sortedTableRootTasks, tablePage, taskViewMode]);
+
   const childrenByParentId = useMemo(() => {
-    const map = {};
-    for (const task of allTasks) {
-      if (!task?.parentId) continue;
-      if (!map[task.parentId]) map[task.parentId] = [];
-      map[task.parentId].push(task);
-    }
-    return map;
-  }, [allTasks]);
+    const excludeIds =
+      activeTab === 'MY_TASKS' ? new Set(filteredTasks.map((t) => t?.id).filter(Boolean)) : undefined;
+    return buildChildrenByParentId(allTasksEnriched, { excludeTaskIds: excludeIds });
+  }, [allTasksEnriched, activeTab, filteredTasks]);
 
   const toggleSubtaskExpand = useCallback((taskId) => {
     setExpandedSubtaskParents((prev) => {
@@ -461,14 +486,14 @@ export default function MyTasksPage() {
   }, [tableRootTasks]);
 
   const taskKpis = useMemo(() => {
-    const out = { total: allTasks.length, todo: 0, inProgress: 0, completed: 0 };
-    for (const task of allTasks) {
+    const out = { total: majorTasks.length, todo: 0, inProgress: 0, completed: 0 };
+    for (const task of majorTasks) {
       if (task.strapiStatus === 'SCHEDULED') out.todo += 1;
       if (task.strapiStatus === 'IN_PROGRESS') out.inProgress += 1;
       if (task.strapiStatus === 'COMPLETED') out.completed += 1;
     }
     return out;
-  }, [allTasks]);
+  }, [majorTasks]);
 
   const loadLookups = useCallback(async () => {
     try {
@@ -486,6 +511,15 @@ export default function MyTasksPage() {
   useEffect(() => {
     loadTasks();
   }, [loadTasks]);
+
+  useEffect(() => {
+    setTablePage(1);
+  }, [activeTab, searchQuery, filters.priority, filters.projectId, taskViewMode]);
+
+  useEffect(() => {
+    const maxPage = Math.max(1, Math.ceil(sortedTableRootTasks.length / TABLE_PAGE_SIZE));
+    setTablePage((prev) => Math.min(prev, maxPage));
+  }, [sortedTableRootTasks.length]);
 
   useEffect(() => {
     loadLookups();
@@ -640,14 +674,16 @@ export default function MyTasksPage() {
   }, [router, searchParams]);
 
   const tabsWithBadges = useMemo(() => {
-    const counts = { all: allTasks.length, MY_TASKS: 0, IN_PROGRESS: 0, OVERDUE: 0 };
+    const counts = { all: majorTasks.length, MY_TASKS: 0, IN_PROGRESS: 0, OVERDUE: 0 };
     for (const task of allTasks) {
       if (isActiveMyTask(task)) counts.MY_TASKS += 1;
+    }
+    for (const task of majorTasks) {
       if (task.strapiStatus === 'IN_PROGRESS') counts.IN_PROGRESS += 1;
-      if (isTaskOverdue(task)) counts.OVERDUE = (counts.OVERDUE || 0) + 1;
+      if (isTaskOverdue(task)) counts.OVERDUE += 1;
     }
     return STATUS_TABS.map((tab) => ({ ...tab, badge: counts[tab.id] || 0 }));
-  }, [allTasks, isActiveMyTask]);
+  }, [allTasks, majorTasks, isActiveMyTask]);
 
   const updateTask = useCallback(
     async (task, patch) => {
@@ -667,13 +703,19 @@ export default function MyTasksPage() {
   const handleSaveTask = async (payload) => {
     try {
       setSaving(true);
+      let savedTask = null;
       if (taskModal.task) {
-        await taskService.updateTask(taskModal.task.id, payload);
+        const res = await taskService.updateTask(taskModal.task.id, payload);
+        savedTask = transformTask(res?.data);
       } else {
-        await taskService.createTask(payload);
+        const res = await taskService.createTask(payload);
+        savedTask = transformTask(res?.data);
       }
       setTaskModal({ open: false, task: null, parentContext: null });
-      await loadTasks();
+      if (savedTask?.id) {
+        setAllTasks((prev) => mergeTasksById([savedTask], prev));
+      }
+      await loadTasks({ silent: true, mergeWithPrevious: true });
     } catch (error) {
       console.error('Save task error:', error);
     } finally {
@@ -1299,8 +1341,14 @@ export default function MyTasksPage() {
       </div>
 
       <div className="text-sm text-gray-600">
-        Showing <span className="font-semibold text-gray-900">{sortedTableRootTasks.length}</span> result
-        {sortedTableRootTasks.length !== 1 ? 's' : ''}
+        Showing <span className="font-semibold text-gray-900">{totalTableRows}</span> result
+        {totalTableRows !== 1 ? 's' : ''}
+        {taskViewMode === 'table' && totalTableRows > TABLE_PAGE_SIZE ? (
+          <>
+            {' '}
+            (page {tablePage} of {totalTablePages})
+          </>
+        ) : null}
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
@@ -1312,7 +1360,7 @@ export default function MyTasksPage() {
           <>
             <Table
               columns={visibleTableColumns}
-              data={sortedTableRootTasks}
+              data={paginatedTableTasks}
               keyField="id"
               variant="modernEmbedded"
               resizableColumns
@@ -1368,6 +1416,15 @@ export default function MyTasksPage() {
                 </Button>
               </div>
             )}
+            {totalTablePages > 1 ? (
+              <Pagination
+                currentPage={tablePage}
+                totalPages={totalTablePages}
+                totalItems={totalTableRows}
+                itemsPerPage={TABLE_PAGE_SIZE}
+                onPageChange={setTablePage}
+              />
+            ) : null}
           </>
         ) : taskViewMode === 'list' ? (
           <MyTasksListByStatus

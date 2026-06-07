@@ -78,7 +78,7 @@ export default function DashboardPage() {
           canViewProjects
             ? projectService.getAllProjects({ pageSize: 10, sort: 'updatedAt:desc' })
             : Promise.resolve({ data: [] }),
-          canViewTasks ? taskService.getAllTasks({ pageSize: 200 }) : Promise.resolve({ data: [] }),
+          canViewTasks ? taskService.fetchAllTasks({ pageSize: 500, sort: 'updatedAt:desc' }).then((data) => ({ data })) : Promise.resolve({ data: [] }),
           strapiClient.getXtrawrkxUsers({ pageSize: 200 }),
         ])
 

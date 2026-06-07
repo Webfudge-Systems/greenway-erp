@@ -6,12 +6,10 @@ Turborepo for Greenway Mobility: **Organization Manager**, **Accounts**, **PM**,
 
 ```bash
 npm install
-cp apps/organization-manager/.env.example apps/organization-manager/.env.local
-cp apps/accounts/.env.example apps/accounts/.env.local
-cp apps/pm/.env.example apps/pm/.env.local
-cp apps/api/.env.example apps/api/.env
 npm run dev:all
 ```
+
+`.env.local` files (frontends) and `apps/api/.env` (API) are set up for localhost. To reset from templates, copy each `.env.example` and apply the localhost overrides commented at the bottom.
 
 | App | URL | Script |
 |-----|-----|--------|

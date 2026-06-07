@@ -20,6 +20,7 @@ apps/api/build/
 !.env.railway.example
 **/!.env.railway.example
 docs/env.*.example
+!docs/env.vercel.example
 apps/**/.env.local
 
 # Strapi

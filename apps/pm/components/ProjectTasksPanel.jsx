@@ -6,6 +6,7 @@ import {
   Avatar,
   Button,
   LoadingSpinner,
+  Pagination,
   Select,
   Table,
   TableCellCreated,
@@ -40,10 +41,12 @@ import {
 } from './PMStatusBadge';
 import taskService from '../lib/api/taskService';
 import taskCommentService from '../lib/api/taskCommentService';
+import { filterMajorTasks } from '../lib/taskListUtils';
 import { usePmTableSort } from '../hooks/usePmTableSort';
 import { TableSortDropdown as PmTableSortDropdown } from '@greenways/ui';
 
 const TABLE_SORT_STORAGE_KEY = 'pm.projectTasks.tableSort';
+const TABLE_PAGE_SIZE = 12;
 
 const STATUS_TABS = [
   { id: 'all', label: 'All Tasks' },
@@ -167,6 +170,7 @@ export default function ProjectTasksPanel({
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [commentError, setCommentError] = useState('');
   const [sortPickerOpen, setSortPickerOpen] = useState(false);
+  const [tablePage, setTablePage] = useState(1);
   const toolbarRef = useRef(null);
 
   const handleApproveAssignment = useCallback(
@@ -294,10 +298,9 @@ export default function ProjectTasksPanel({
     return list;
   }, [tasks, activeTab, searchQuery]);
 
-  const tableRootTasks = useMemo(() => {
-    const idSet = new Set(tasks.map((t) => t.id).filter((x) => x != null));
-    return filteredTasks.filter((t) => !t.parentId || !idSet.has(t.parentId));
-  }, [tasks, filteredTasks]);
+  const majorTasks = useMemo(() => filterMajorTasks(tasks), [tasks]);
+
+  const tableRootTasks = useMemo(() => filterMajorTasks(filteredTasks), [filteredTasks]);
 
   const {
     sortedData: sortedTableRootTasks,
@@ -316,6 +319,22 @@ export default function ProjectTasksPanel({
     storageKey: TABLE_SORT_STORAGE_KEY,
     data: tableRootTasks,
   });
+
+  const totalTableRows = sortedTableRootTasks.length;
+  const totalTablePages = Math.max(1, Math.ceil(totalTableRows / TABLE_PAGE_SIZE));
+  const paginatedTableTasks = useMemo(() => {
+    const start = (tablePage - 1) * TABLE_PAGE_SIZE;
+    return sortedTableRootTasks.slice(start, start + TABLE_PAGE_SIZE);
+  }, [sortedTableRootTasks, tablePage]);
+
+  useEffect(() => {
+    setTablePage(1);
+  }, [activeTab, searchQuery]);
+
+  useEffect(() => {
+    const maxPage = Math.max(1, Math.ceil(sortedTableRootTasks.length / TABLE_PAGE_SIZE));
+    setTablePage((prev) => Math.min(prev, maxPage));
+  }, [sortedTableRootTasks.length]);
 
   useEffect(() => {
     if (!sortPickerOpen) return;
@@ -355,13 +374,13 @@ export default function ProjectTasksPanel({
   }, [tableRootTasks]);
 
   const tabsWithBadges = useMemo(() => {
-    const counts = { all: tasks.length };
-    for (const task of tasks) {
+    const counts = { all: majorTasks.length };
+    for (const task of majorTasks) {
       counts[task.strapiStatus] = (counts[task.strapiStatus] || 0) + 1;
       if (isTaskOverdue(task)) counts.OVERDUE = (counts.OVERDUE || 0) + 1;
     }
     return STATUS_TABS.map((tab) => ({ ...tab, badge: counts[tab.id] || 0 }));
-  }, [tasks]);
+  }, [majorTasks]);
 
   const taskColumns = useMemo(
     () => [
@@ -686,8 +705,14 @@ export default function ProjectTasksPanel({
           <span className="text-gray-400">Loading tasks…</span>
         ) : (
           <>
-            Showing <span className="font-semibold text-gray-900">{sortedTableRootTasks.length}</span> result
-            {sortedTableRootTasks.length !== 1 ? 's' : ''}
+            Showing <span className="font-semibold text-gray-900">{totalTableRows}</span> result
+            {totalTableRows !== 1 ? 's' : ''}
+            {totalTableRows > TABLE_PAGE_SIZE ? (
+              <>
+                {' '}
+                (page {tablePage} of {totalTablePages})
+              </>
+            ) : null}
           </>
         )}
       </div>
@@ -701,7 +726,7 @@ export default function ProjectTasksPanel({
           <>
             <Table
               columns={sortableTaskColumns}
-              data={sortedTableRootTasks}
+              data={paginatedTableTasks}
               keyField="id"
               variant="modern"
               onRowClick={(row) => router.push(`/tasks/${row.id}`)}
@@ -739,6 +764,15 @@ export default function ProjectTasksPanel({
                 )}
               </div>
             )}
+            {totalTablePages > 1 ? (
+              <Pagination
+                currentPage={tablePage}
+                totalPages={totalTablePages}
+                totalItems={totalTableRows}
+                itemsPerPage={TABLE_PAGE_SIZE}
+                onPageChange={setTablePage}
+              />
+            ) : null}
           </>
         )}
       </div>

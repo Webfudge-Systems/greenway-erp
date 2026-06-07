@@ -6,21 +6,48 @@ const cache = require('../utils/cache');
 
 const TTL_SECONDS = Number(process.env.CACHE_TTL_SECONDS) || 300;
 
-const SKIP_PREFIXES = ['/api/auth', '/api/health', '/api/connect', '/api/upload', '/admin', '/_health'];
+const SKIP_PREFIXES = [
+  '/api/auth',
+  '/api/health',
+  '/api/connect',
+  '/api/upload',
+  '/admin',
+  '/_health',
+];
 
 function isCacheEnabled() {
   if (process.env.CACHE_API_ENABLED === 'false') return false;
   return redis.isRedisConfigured();
 }
 
-function shouldSkipPath(path) {
+function isTaskApiPath(path) {
+  return path === '/api/tasks' || path.startsWith('/api/tasks/');
+}
+
+/** Paths that must never trigger org cache invalidation (auth, uploads, etc.). */
+function shouldSkipMutationInvalidate(path) {
   if (!path || !path.startsWith('/api')) return true;
   return SKIP_PREFIXES.some((prefix) => path.startsWith(prefix));
 }
 
+/** GET responses that must never be stored in Redis. */
+function shouldSkipGetCache(path) {
+  if (shouldSkipMutationInvalidate(path)) return true;
+  // Task reads are paginated and high-churn; caching any task GET caused stale My Tasks lists.
+  if (isTaskApiPath(path)) return true;
+  return false;
+}
+
+/**
+ * Scoped per user + org + role + URL so RBAC and tenant isolation stay correct.
+ * @param {import('koa').Context} ctx
+ */
 function buildCacheKey(ctx) {
   const userId = ctx.state.user?.id ?? 'anon';
-  const orgId = ctx.state.orgId ?? ctx.request.headers['x-organization-id'] ?? 'none';
+  const orgId =
+    ctx.state.orgId ??
+    ctx.request.headers['x-organization-id'] ??
+    'none';
   const role = ctx.state.orgRoleCode ?? 'none';
   const qs = ctx.querystring || '';
   const digest = crypto
@@ -33,28 +60,41 @@ function buildCacheKey(ctx) {
 
 module.exports = () => {
   return async (ctx, next) => {
-    if (!isCacheEnabled()) return next();
+    if (!isCacheEnabled()) {
+      return next();
+    }
 
     const path = ctx.path || '';
 
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(ctx.method)) {
       await next();
-      if (ctx.status >= 200 && ctx.status < 300 && path.startsWith('/api') && !shouldSkipPath(path)) {
+      // Always invalidate org cache on task writes (POST /api/tasks was previously skipped).
+      if (
+        ctx.status >= 200 &&
+        ctx.status < 300 &&
+        path.startsWith('/api') &&
+        !shouldSkipMutationInvalidate(path)
+      ) {
         const orgId = ctx.state.orgId ?? ctx.request.headers['x-organization-id'];
         const userId = ctx.state.user?.id;
         let removed = await cache.invalidateOrg(orgId);
         if (!removed) {
           removed = await cache.invalidateUser(userId);
         }
-        if (removed > 0) ctx.set('X-Cache-Invalidate', String(removed));
+        if (removed > 0) {
+          ctx.set('X-Cache-Invalidate', String(removed));
+        }
       }
       return;
     }
 
-    if (ctx.method !== 'GET' || shouldSkipPath(path)) return next();
+    if (ctx.method !== 'GET' || shouldSkipGetCache(path)) {
+      return next();
+    }
 
     const cacheKey = buildCacheKey(ctx);
     const hit = await cache.getJson(cacheKey);
+
     if (hit != null) {
       ctx.body = hit;
       ctx.status = 200;

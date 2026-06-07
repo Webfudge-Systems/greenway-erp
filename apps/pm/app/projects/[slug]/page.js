@@ -69,6 +69,7 @@ import {
   canEditProjectInPm,
   getPmOrgRoleKind,
 } from '../../../lib/pmOrgRoles';
+import { mergeTasksById } from '../../../lib/taskListUtils';
 
 const DETAIL_TABS = [
   { key: 'overview', label: 'Overview' },
@@ -230,19 +231,24 @@ export default function ProjectDetailPage() {
     }
   }, [slug]);
 
-  const loadTasks = useCallback(async () => {
+  const loadTasks = useCallback(async ({ silent = false, mergeWithPrevious = false } = {}) => {
     if (!project?.id) return;
     const pid = Number(project.id);
     if (Number.isNaN(pid)) return;
     try {
-      setTasksLoading(true);
-      const res = await taskService.getTasksByProject(pid, { pageSize: 100, sort: 'updatedAt:desc' });
-      setTasks((res?.data || []).map(transformTask).filter(Boolean));
+      if (!silent) setTasksLoading(true);
+      const rawList = await taskService.fetchAllTasksByProject(pid, { pageSize: 500, sort: 'updatedAt:desc' });
+      const list = rawList.map(transformTask).filter(Boolean);
+      if (mergeWithPrevious) {
+        setTasks((prev) => mergeTasksById(list, prev));
+      } else {
+        setTasks(list);
+      }
     } catch (error) {
       console.error('Load project tasks error:', error);
-      setTasks([]);
+      if (!silent) setTasks([]);
     } finally {
-      setTasksLoading(false);
+      if (!silent) setTasksLoading(false);
     }
   }, [project?.id]);
 
@@ -457,10 +463,19 @@ export default function ProjectDetailPage() {
     try {
       setSaving(true);
       const nextPayload = { ...payload, projectId: payload.projectId || project.id };
-      if (taskModal.task) await taskService.updateTask(taskModal.task.id, nextPayload);
-      else await taskService.createTask(nextPayload);
+      let savedTask = null;
+      if (taskModal.task) {
+        const res = await taskService.updateTask(taskModal.task.id, nextPayload);
+        savedTask = transformTask(res?.data);
+      } else {
+        const res = await taskService.createTask(nextPayload);
+        savedTask = transformTask(res?.data);
+      }
       setTaskModal({ open: false, task: null, parentContext: null });
-      await loadTasks();
+      if (savedTask?.id) {
+        setTasks((prev) => mergeTasksById([savedTask], prev));
+      }
+      await loadTasks({ silent: true, mergeWithPrevious: true });
       await loadProject();
     } catch (error) {
       console.error('Save task error:', error);

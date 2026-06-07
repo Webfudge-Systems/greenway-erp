@@ -68,6 +68,7 @@ export { ProgressBar } from './ProgressBar';
 export { MeetingsEmbedList } from './MeetingsEmbedList';
 export { TableSortDropdown } from './TableSortDropdown';
 export { AccessDeniedPanel } from './AccessDeniedPanel';
+export { LoginBrandingPanel, LoginBrandingMobile } from './LoginBrandingPanel';
 export { WorkspaceLayoutContent } from './WorkspaceLayoutContent';
 export {
   entityInfoLabelClass,

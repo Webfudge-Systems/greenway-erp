@@ -4,6 +4,7 @@ const siteUrl = (process.env.NEXT_PUBLIC_ACCOUNTS_APP_URL || 'http://localhost:3
 
 export const ACCOUNTS_SITE = {
   ...WEBFUDGE_BRAND,
+  productName: 'Fudge Base',
   /** SEO / metadata product name */
   name: 'Greenway Accounts',
   shortName: 'Accounts',

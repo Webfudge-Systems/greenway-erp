@@ -12,7 +12,10 @@
     "start": "strapi start",
     "strapi": "strapi",
     "upgrade": "npx @strapi/upgrade latest",
-    "upgrade:dry": "npx @strapi/upgrade latest --dry"
+    "upgrade:dry": "npx @strapi/upgrade latest --dry",
+    "backfill:task-assigners": "node scripts/backfill-task-assigners.js",
+    "backfill:task-assigners:dry-run": "node scripts/backfill-task-assigners.js --dry-run",
+    "flush:api-cache": "node scripts/flush-api-cache.js"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.11.2",

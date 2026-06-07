@@ -12,6 +12,7 @@ const siteUrl = (
 /** Site metadata, SEO, and PWA config for the Organization Manager app */
 export const ORG_MANAGER_SITE = {
   ...WEBFUDGE_BRAND,
+  productName: 'Orbit',
   name: 'Greenways Organization Manager',
   shortName: 'Org Manager',
   legalName: 'Greenway Mobility',

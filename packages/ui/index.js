@@ -70,6 +70,8 @@ export {
   MeetingsEmbedList,
   TableSortDropdown,
   AccessDeniedPanel,
+  LoginBrandingPanel,
+  LoginBrandingMobile,
   WorkspaceLayoutContent,
   entityInfoLabelClass,
   InfoSection,

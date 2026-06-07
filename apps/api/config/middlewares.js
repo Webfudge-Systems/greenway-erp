@@ -8,9 +8,9 @@ const defaultOrigins = [
   'https://pm.greenwaymobility.in',
   'https://accounts.greenwaymobility.in',
   'https://api.greenwaymobility.in',
-  'https://orbit.webfudge.greenwaymobility.com',
-  'https://base.webfudge.greenwaymobility.com',
-  'https://erp.webfudge.greenwaymobility.com',
+  'https://orbit.greenway.webfudge.in',
+  'https://base.greenway.webfudge.in',
+  'https://erp.greenway.webfudge.in',
 ];
 
 const extraOrigins = (process.env.CORS_ORIGINS || '')
@@ -23,7 +23,7 @@ const allowedOrigins = [...new Set([...defaultOrigins, ...extraOrigins])];
 const allowedOriginPatterns = [
   /^https:\/\/[a-z0-9-]+\.vercel\.app$/,
   /^https:\/\/[a-z0-9-]+\.greenwaymobility\.in$/,
-  /^https:\/\/[a-z0-9-]+\.webfudge\.greenwaymobility\.com$/,
+  /^https:\/\/[a-z0-9-]+\.greenway\.webfudge\.in$/,
   /^https:\/\/[a-z0-9-]+\.up\.railway\.app$/,
 ];
 

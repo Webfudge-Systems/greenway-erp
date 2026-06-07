@@ -167,9 +167,9 @@ You do **not** need Turborepo on Vercel. Each project builds itself after a root
 
 | Vercel project | Domain |
 |----------------|--------|
-| Organization Manager | `orbit.webfudge.greenwaymobility.com` |
-| Accounts | `base.webfudge.greenwaymobility.com` |
-| PM | `erp.webfudge.greenwaymobility.com` |
+| Organization Manager | `orbit.greenway.webfudge.in` |
+| Accounts | `base.greenway.webfudge.in` |
+| PM | `erp.greenway.webfudge.in` |
 
 API: `https://greenway-backend-production.up.railway.app` — see `apps/*/.env.vercel`.
 
@@ -211,9 +211,11 @@ Redeploy Railway after changing CORS.
 | `apps/organization-manager/.env.vercel` | Vercel copy-paste for org manager |
 | `apps/accounts/.env.vercel` | Vercel copy-paste for accounts |
 | `apps/pm/.env.vercel` | Vercel copy-paste for PM |
-| `apps/organization-manager/.env.example` | Local dev |
-| `apps/accounts/.env.example` | Local dev |
-| `apps/pm/.env.example` | Local dev |
+| `apps/organization-manager/.env.example` | Production template (no secrets) |
+| `apps/accounts/.env.example` | Production template (no secrets) |
+| `apps/pm/.env.example` | Production template (no secrets) |
+| `apps/*/.env.local` | Local dev overrides (gitignored) |
+| `apps/*/.env.production` | Production URLs for local prod builds |
 
 ---
 

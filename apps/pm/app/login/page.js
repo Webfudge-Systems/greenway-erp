@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@greenways/auth';
 import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
-import { Button, Input } from '@greenways/ui';
-import Image from 'next/image';
+import { Button, Input, LoginBrandingPanel, LoginBrandingMobile } from '@greenways/ui';
 import { PM_SITE } from '../../lib/site';
+
+const LOGIN_TAGLINE =
+  'Projects, tasks, and team delivery in one workspace. Sign in to access your dashboard and stay on top of every task.';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -64,59 +66,16 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left branding panel */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-brand-primary to-orange-600 flex-col justify-center px-16 py-20">
-        <div className="max-w-lg">
-          <div className="flex items-center gap-3 mb-8">
-            <Image
-              src={PM_SITE.logoPath}
-              alt={PM_SITE.brandName}
-              width={40}
-              height={40}
-              className="h-10 w-10 object-contain"
-              priority
-            />
-            <span className="text-white font-semibold text-lg">{PM_SITE.brandName}</span>
-          </div>
-          <h1 className="text-5xl font-bold text-white mb-6">Welcome back</h1>
-          <p className="text-xl text-white/90 mb-4">
-            Project Management – track projects, tasks, and your team in one place.
-          </p>
-          <p className="text-white/80 leading-relaxed">
-            Sign in to access your dashboard, manage project delivery, and stay on top of every task.
-          </p>
-          <div className="mt-12 grid grid-cols-3 gap-6">
-            {[
-              { label: 'Projects', value: 'Track' },
-              { label: 'Tasks', value: 'Manage' },
-              { label: 'Team', value: 'Collaborate' },
-            ].map((item) => (
-              <div key={item.label} className="bg-white/10 rounded-xl p-4 text-center">
-                <p className="text-white font-semibold text-sm">{item.value}</p>
-                <p className="text-white/70 text-xs mt-1">{item.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen flex flex-col lg:flex-row">
+      <LoginBrandingMobile tagline={LOGIN_TAGLINE} />
+      <LoginBrandingPanel tagline={LOGIN_TAGLINE} />
 
-      {/* Right form panel */}
       <div className="w-full lg:w-1/2 flex flex-col justify-center p-8 lg:p-16">
         <div className="w-full max-w-md mx-auto">
-          <div className="flex items-center gap-2 mb-8 lg:hidden">
-            <Image
-              src={PM_SITE.logoPath}
-              alt={PM_SITE.brandName}
-              width={32}
-              height={32}
-              className="h-8 w-8 object-contain"
-              priority
-            />
-            <span className="font-semibold text-brand-foreground">{PM_SITE.brandName}</span>
-          </div>
           <h2 className="text-3xl font-semibold text-brand-dark mb-2">Sign in</h2>
-          <p className="text-gray-600 mb-8">Enter your credentials to access the PM dashboard.</p>
+          <p className="text-gray-600 mb-8">
+            Enter your credentials to access {PM_SITE.productName}.
+          </p>
           <form onSubmit={handleSubmit} className="space-y-5">
             {loginError && (
               <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">

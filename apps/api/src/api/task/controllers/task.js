@@ -425,11 +425,18 @@ async function projectIdsForMember(strapi, orgId, userId, departmentId = null) {
   return rows.map((r) => r.id).filter((id) => id != null);
 }
 
+function userIsTaskReporter(task, userId) {
+  if (!task || userId == null) return false;
+  const reporterId = assignerPkFromEntity(task);
+  return reporterId != null && Number(reporterId) === Number(userId);
+}
+
 async function memberMayViewTask(strapi, orgId, userId, entry) {
   if (!entry?.id || userId == null) return false;
   const row = await strapi.entityService.findOne(UID, entry.id, {
     populate: {
       assignee: true,
+      assigner: true,
       collaborators: true,
       pendingCollaborators: true,
       assignmentRequestedBy: true,
@@ -440,6 +447,7 @@ async function memberMayViewTask(strapi, orgId, userId, entry) {
   if (!row || orgIdFromRelation(row.organization) !== orgId) return false;
   const requesterId = relationId(row.assignmentRequestedBy);
   if (requesterId != null && Number(requesterId) === Number(userId)) return true;
+  if (userIsTaskReporter(row, userId)) return true;
   const aid = relationId(row.assignee);
   if (aid != null && Number(aid) === Number(userId)) return true;
   const cols = collaboratorIdsFromEntity(row);
@@ -486,7 +494,7 @@ module.exports = createCoreController(UID, ({ strapi }) => ({
     if (isPmOrgMemberRole(ctx) && ctx.state.user?.id) {
       const uid = ctx.state.user.id;
       const pids = await projectIdsForMember(strapi, ctx.state.orgId, uid, ctx.state.departmentId);
-      const visOr = [{ assignee: uid }, { collaborators: { id: uid } }];
+      const visOr = [{ assigner: uid }, { assignee: uid }, { collaborators: { id: uid } }];
       if (pids.length) visOr.push({ projects: { id: { $in: pids } } });
       const hasExtra = Object.keys(extraFilters).length > 0;
       if (hasExtra) {
@@ -508,6 +516,7 @@ module.exports = createCoreController(UID, ({ strapi }) => ({
 
     const total = await safeCount(strapi, UID, filters, results.length);
     const pageCount = Math.ceil(Math.max(total, 1) / pageSize);
+    ctx.set('Cache-Control', 'no-store');
     return { data: results, meta: { pagination: { page, pageSize, pageCount, total } } };
   },
 
@@ -533,6 +542,7 @@ module.exports = createCoreController(UID, ({ strapi }) => ({
       const ok = await memberMayViewTask(strapi, ctx.state.orgId, ctx.state.user.id, entry);
       if (!ok) return ctx.forbidden('Access denied');
     }
+    ctx.set('Cache-Control', 'no-store');
     return { data: entry };
   },
 
@@ -1030,6 +1040,7 @@ module.exports = createCoreController(UID, ({ strapi }) => ({
           : null,
       }));
 
+    ctx.set('Cache-Control', 'no-store');
     return {
       data: {
         overdue: { count: overdue.length, items: slice(overdue, 5) },

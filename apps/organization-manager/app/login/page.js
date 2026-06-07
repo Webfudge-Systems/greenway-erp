@@ -3,9 +3,12 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@greenways/auth'
-import { AlertCircle, Eye, EyeOff, Loader2, ShieldCheck } from 'lucide-react'
-import { Button, Input } from '@greenways/ui'
+import { AlertCircle, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Button, Input, LoginBrandingPanel, LoginBrandingMobile } from '@greenways/ui'
 import { ORG_MANAGER_SITE } from '../../lib/site'
+
+const LOGIN_TAGLINE =
+  'Create and manage organizations, tenants, and platform access across the suite.'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -55,33 +58,14 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white lg:flex-row">
-      <div className="border-b border-orange-100 bg-gradient-to-r from-brand-primary to-orange-600 px-6 py-5 lg:hidden">
-        <div className="mx-auto flex max-w-md items-center gap-3 text-white">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20">
-            <ShieldCheck className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="text-lg font-bold">{ORG_MANAGER_SITE.shortName}</p>
-            <p className="text-sm text-white/85">{ORG_MANAGER_SITE.tagline}</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-brand-primary to-orange-600 flex-col justify-center px-16 py-20">
-        <div className="max-w-lg text-white">
-          <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-6">
-            <ShieldCheck className="w-7 h-7" />
-          </div>
-          <h1 className="text-5xl font-bold mb-6">{ORG_MANAGER_SITE.name}</h1>
-          <p className="text-xl text-white/90 leading-relaxed">{ORG_MANAGER_SITE.description}</p>
-        </div>
-      </div>
+      <LoginBrandingMobile tagline={LOGIN_TAGLINE} />
+      <LoginBrandingPanel tagline={LOGIN_TAGLINE} />
 
       <div className="flex w-full flex-1 flex-col justify-center p-6 sm:p-8 lg:w-1/2 lg:p-16">
         <div className="mx-auto w-full max-w-md">
           <h2 className="mb-2 text-2xl font-semibold text-brand-dark sm:text-3xl">Super admin sign in</h2>
           <p className="mb-6 text-sm text-gray-600 sm:mb-8 sm:text-base">
-            Only seeded platform administrators can access this portal.
+            Sign in to {ORG_MANAGER_SITE.productName}. Only seeded platform administrators can access this portal.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
