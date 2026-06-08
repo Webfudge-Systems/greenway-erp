@@ -24,6 +24,7 @@ import OrganizationListMobile from '../../components/OrganizationListMobile'
 import PlatformPageHeader from '../../components/PlatformPageHeader'
 import { formatOrgStatus, orgStatusVariant } from '../../lib/orgDisplay'
 import platformService from '../../lib/platformService'
+import { ORGANIZATION_CREATION_LIMIT } from '../../lib/site'
 
 export default function OrganizationsPage() {
   const router = useRouter()
@@ -155,13 +156,17 @@ export default function OrganizationsPage() {
     <div className="min-h-full space-y-4 bg-white p-3 sm:space-y-6 sm:p-4 md:p-6">
       <PlatformPageHeader
         title="Organizations"
-        subtitle="Create and manage tenant organizations with isolated data and users."
+        subtitle="Manage tenant organizations with isolated data and users. Each owner account is limited to one organization."
         breadcrumb={[{ label: 'Organizations', href: '/organizations' }]}
       />
 
       {error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>
       ) : null}
+
+      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        {ORGANIZATION_CREATION_LIMIT.message}
+      </div>
 
       {loading && !stats ? (
         <KPICardsRowSkeleton count={4} />

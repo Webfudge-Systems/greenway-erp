@@ -220,12 +220,13 @@ export default function AccountsHome() {
       setLoading(true)
       setActivityFetchFailed(false)
 
-      const [usersRes, rolesList, deptRes, teamsRes, orgRes] = await Promise.all([
+      const [usersRes, rolesList, deptRes, teamsRes, orgRes, auditResult] = await Promise.all([
         usersService.list({ sort: 'updatedAt:desc' }),
         rolesService.listForOrg(),
         departmentsService.list().catch(() => null),
         teamsService.list().catch(() => null),
         organizationService.getCurrent().catch(() => null),
+        auditService.list({ page: 1, pageSize: 6 }).catch(() => ({ rows: [] })),
       ])
 
       const users = normalizeStrapiList(usersRes)
@@ -265,15 +266,9 @@ export default function AccountsHome() {
         }
       }
 
-      try {
-        const auditResult = await auditService.list({ page: 1, pageSize: 6 })
-        const rows = Array.isArray(auditResult?.rows) ? auditResult.rows : []
-        setRecentActivity(rows.slice(0, 6))
-        setActivityFetchFailed(false)
-      } catch {
-        setRecentActivity([])
-        setActivityFetchFailed(true)
-      }
+      const rows = Array.isArray(auditResult?.rows) ? auditResult.rows : []
+      setRecentActivity(rows.slice(0, 6))
+      setActivityFetchFailed(false)
     } catch (error) {
       if (isUnauthorizedError(error) && typeof window !== 'undefined') {
         localStorage.removeItem('auth-token')

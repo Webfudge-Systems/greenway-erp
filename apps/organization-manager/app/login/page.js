@@ -4,11 +4,31 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@greenways/auth'
 import { AlertCircle, Eye, EyeOff, Loader2 } from 'lucide-react'
-import { Button, Input, LoginBrandingPanel, LoginBrandingMobile } from '@greenways/ui'
+import {
+  Button,
+  Input,
+  LoginBrandingPanel,
+  LoginBrandingMobile,
+  LoginMobileBrandHeader,
+} from '@greenways/ui'
 import { ORG_MANAGER_SITE } from '../../lib/site'
 
-const LOGIN_TAGLINE =
-  'Create and manage organizations, tenants, and platform access across the suite.'
+const LOGIN_BRANDING = {
+  productName: ORG_MANAGER_SITE.productName,
+  brandName: ORG_MANAGER_SITE.brandName,
+  brandIconPath: ORG_MANAGER_SITE.loginLogoPath,
+  creatorLine: 'by Webfudge Systems',
+  headline: 'Welcome back',
+  summary:
+    'Your central hub to manage all your organizations — teams, access, and apps in one place.',
+  description:
+    'Switch between organizations, invite your team, and open Fudge ERP and Fudge Base for each company.',
+  usageCards: [
+    { label: 'Organizations', value: 'Manage' },
+    { label: 'Teams', value: 'Invite' },
+    { label: 'Apps', value: 'Open' },
+  ],
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -50,58 +70,82 @@ export default function LoginPage() {
 
   if (loading && !isSubmitting) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-brand-primary" />
+      <div className="min-h-screen flex items-center justify-center bg-brand-light">
+        <div className="flex items-center gap-3 bg-white px-6 py-4 rounded-2xl shadow-lg border border-gray-100">
+          <Loader2 className="w-6 h-6 animate-spin text-brand-primary" />
+          <span className="font-medium text-brand-dark">Loading...</span>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-white lg:flex-row">
-      <LoginBrandingMobile tagline={LOGIN_TAGLINE} />
-      <LoginBrandingPanel tagline={LOGIN_TAGLINE} />
+    <div className="min-h-screen flex flex-col lg:flex-row">
+      <LoginBrandingMobile
+        productName={LOGIN_BRANDING.productName}
+        brandName={LOGIN_BRANDING.brandName}
+        brandIconPath={LOGIN_BRANDING.brandIconPath}
+        summary={LOGIN_BRANDING.summary}
+      />
+      <LoginBrandingPanel {...LOGIN_BRANDING} />
 
-      <div className="flex w-full flex-1 flex-col justify-center p-6 sm:p-8 lg:w-1/2 lg:p-16">
-        <div className="mx-auto w-full max-w-md">
-          <h2 className="mb-2 text-2xl font-semibold text-brand-dark sm:text-3xl">Super admin sign in</h2>
-          <p className="mb-6 text-sm text-gray-600 sm:mb-8 sm:text-base">
+      <div className="w-full lg:w-1/2 flex flex-col justify-center p-8 lg:p-16">
+        <div className="w-full max-w-md mx-auto">
+          <LoginMobileBrandHeader
+            brandIconPath={LOGIN_BRANDING.brandIconPath}
+            brandName={LOGIN_BRANDING.brandName}
+            productName={LOGIN_BRANDING.productName}
+            creatorLine={LOGIN_BRANDING.creatorLine}
+          />
+          <h2 className="text-3xl font-semibold text-brand-dark mb-2">Super admin sign in</h2>
+          <p className="text-gray-600 mb-8">
             Sign in to {ORG_MANAGER_SITE.productName}. Only seeded platform administrators can access this portal.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {loginError && (
-              <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
-                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                {loginError}
+              <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
+                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-red-800">Login failed</p>
+                  <p className="text-sm text-red-700 mt-1">{loginError}</p>
+                </div>
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+              <label htmlFor="email" className="block text-sm font-medium text-brand-dark mb-1.5">Email</label>
               <Input
+                id="email"
+                name="email"
                 type="email"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="superadmin@greenways.in"
                 error={errors.email}
+                className="w-full"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
+              <label htmlFor="password" className="block text-sm font-medium text-brand-dark mb-1.5">Password</label>
               <div className="relative">
                 <Input
+                  id="password"
+                  name="password"
                   type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   error={errors.password}
-                  className="pr-10"
+                  className="w-full pr-10"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brand-dark"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>

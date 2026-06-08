@@ -7,6 +7,7 @@ import {
   Button,
   Input,
   KPICard,
+  ListTableCardSkeleton,
   LoadingSpinner,
   Modal,
   Pagination,
@@ -603,8 +604,8 @@ export default function UsersPage() {
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         {loading ? (
-          <div className="p-12 flex items-center justify-center">
-            <LoadingSpinner size="lg" message="Loading users..." />
+          <div className="p-6">
+            <ListTableCardSkeleton rows={8} columns={5} className="border-0 shadow-none" />
           </div>
         ) : (
           <>

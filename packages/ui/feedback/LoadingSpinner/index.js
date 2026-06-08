@@ -5,6 +5,7 @@ export {
   SkeletonLoader,
   CardSkeleton,
   TableSkeleton,
+  ListTableCardSkeleton,
   KPICardSkeleton,
   KPICardsRowSkeleton,
   WidgetCardSkeleton,

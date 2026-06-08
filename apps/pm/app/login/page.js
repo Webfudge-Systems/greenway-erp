@@ -4,11 +4,30 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@greenways/auth';
 import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
-import { Button, Input, LoginBrandingPanel, LoginBrandingMobile } from '@greenways/ui';
+import {
+  Button,
+  Input,
+  LoginBrandingPanel,
+  LoginBrandingMobile,
+  LoginMobileBrandHeader,
+} from '@greenways/ui';
 import { PM_SITE } from '../../lib/site';
 
-const LOGIN_TAGLINE =
-  'Projects, tasks, and team delivery in one workspace. Sign in to access your dashboard and stay on top of every task.';
+const LOGIN_BRANDING = {
+  productName: PM_SITE.productName,
+  brandName: PM_SITE.brandName,
+  brandIconPath: PM_SITE.loginLogoPath,
+  creatorLine: 'by Webfudge Systems',
+  headline: 'Welcome back',
+  summary: 'Project management — track projects, tasks, and your team in one place.',
+  description:
+    'Sign in to access your dashboard, manage delivery, and stay on top of every task.',
+  usageCards: [
+    { label: 'Projects', value: 'Track' },
+    { label: 'Tasks', value: 'Manage' },
+    { label: 'Team', value: 'Collaborate' },
+  ],
+};
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -67,11 +86,22 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
-      <LoginBrandingMobile tagline={LOGIN_TAGLINE} />
-      <LoginBrandingPanel tagline={LOGIN_TAGLINE} />
+      <LoginBrandingMobile
+        productName={LOGIN_BRANDING.productName}
+        brandName={LOGIN_BRANDING.brandName}
+        brandIconPath={LOGIN_BRANDING.brandIconPath}
+        summary={LOGIN_BRANDING.summary}
+      />
+      <LoginBrandingPanel {...LOGIN_BRANDING} />
 
       <div className="w-full lg:w-1/2 flex flex-col justify-center p-8 lg:p-16">
         <div className="w-full max-w-md mx-auto">
+          <LoginMobileBrandHeader
+            brandIconPath={LOGIN_BRANDING.brandIconPath}
+            brandName={LOGIN_BRANDING.brandName}
+            productName={LOGIN_BRANDING.productName}
+            creatorLine={LOGIN_BRANDING.creatorLine}
+          />
           <h2 className="text-3xl font-semibold text-brand-dark mb-2">Sign in</h2>
           <p className="text-gray-600 mb-8">
             Enter your credentials to access {PM_SITE.productName}.

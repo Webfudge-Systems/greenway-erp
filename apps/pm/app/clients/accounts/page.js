@@ -29,6 +29,7 @@ import {
   Table,
   Pagination,
   Avatar,
+  ListTableCardSkeleton,
   LoadingSpinner,
   TabsWithActions,
   KPICard,
@@ -1138,8 +1139,8 @@ export default function ClientAccountsPage() {
       {/* Table */}
       <div className="hidden overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm md:block">
         {loading ? (
-          <div className="p-12 flex flex-col items-center justify-center">
-            <LoadingSpinner size="lg" message="Loading client accounts..." />
+          <div className="p-6">
+            <ListTableCardSkeleton rows={8} columns={5} className="border-0 shadow-none" />
           </div>
         ) : (
           <>

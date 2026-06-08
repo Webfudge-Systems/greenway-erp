@@ -9,6 +9,7 @@ import {
   Avatar,
   Button,
   KPICard,
+  ListTableCardSkeleton,
   LoadingSpinner,
   Modal,
   Pagination,
@@ -1353,9 +1354,7 @@ export default function MyTasksPage() {
 
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
         {loading ? (
-          <div className="flex flex-col items-center justify-center p-12">
-            <LoadingSpinner size="lg" message="Loading tasks..." />
-          </div>
+          <ListTableCardSkeleton rows={10} columns={7} className="border-0 shadow-none" />
         ) : taskViewMode === 'table' ? (
           <>
             <Table

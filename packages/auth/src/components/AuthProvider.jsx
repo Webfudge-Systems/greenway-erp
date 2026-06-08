@@ -17,6 +17,10 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [hasStoredToken, setHasStoredToken] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return Boolean(authService.getToken());
+  });
 
   // Multi-tenant: list of orgs the user belongs to, and the active one
   const [organizations, setOrganizations] = useState([]);
@@ -28,6 +32,7 @@ export const AuthProvider = ({ children }) => {
       try {
         setLoading(true);
         const token = authService.getToken();
+        setHasStoredToken(Boolean(token));
 
         if (token) {
           try {
@@ -83,6 +88,7 @@ export const AuthProvider = ({ children }) => {
       if (response.user && response.token) {
         setUser(response.user);
         setIsAuthenticated(true);
+        setHasStoredToken(true);
 
         authService.getCurrentUser().then((fresh) => {
           if (fresh) setUser(fresh);
@@ -125,6 +131,7 @@ export const AuthProvider = ({ children }) => {
 
         setUser(response.user);
         setIsAuthenticated(true);
+        setHasStoredToken(true);
         setOrganizations([]);
         setCurrentOrgState(null);
 
@@ -151,6 +158,7 @@ export const AuthProvider = ({ children }) => {
     authService.logout();
     setUser(null);
     setIsAuthenticated(false);
+    setHasStoredToken(false);
     setOrganizations([]);
     setCurrentOrgState(null);
   };
@@ -192,6 +200,7 @@ export const AuthProvider = ({ children }) => {
     setUser,
     isAuthenticated,
     loading,
+    hasStoredToken,
     login,
     platformLogin,
     logout,

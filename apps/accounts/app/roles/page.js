@@ -6,6 +6,7 @@ import {
   Button,
   Input,
   KPICard,
+  ListTableCardSkeleton,
   LoadingSpinner,
   Modal,
   Table,
@@ -429,8 +430,8 @@ export default function RolesPage() {
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         {loading ? (
-          <div className="p-12 flex items-center justify-center">
-            <LoadingSpinner size="lg" message="Loading roles..." />
+          <div className="p-6">
+            <ListTableCardSkeleton rows={6} columns={4} className="border-0 shadow-none" />
           </div>
         ) : (
           <>

@@ -2,6 +2,7 @@
 
 const { resolveOrganizationRoleId } = require('../../../utils/organization-role');
 const { uniqueUsernameFromEmail } = require('../../../utils/user-username');
+const { assertUserCanCreateOrganization } = require('../../../utils/organization-limit');
 const { logPlatformActivity, ACTIVITY_UID, buildLegacyActivityItems, mergeActivityItems } = require('../../../utils/platform-activity-log');
 
 const ORG_UID = 'api::organization.organization';
@@ -130,6 +131,8 @@ module.exports = ({ strapi }) => ({
       firstName: payload.ownerFirstName,
       lastName: payload.ownerLastName,
     });
+
+    await assertUserCanCreateOrganization(strapi, ownerUser.id);
 
     const organization = await strapi.entityService.create(ORG_UID, {
       data: {

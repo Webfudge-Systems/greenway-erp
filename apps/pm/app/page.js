@@ -1,7 +1,7 @@
 'use client'
 export const dynamic = 'force-dynamic'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useAuth } from '@greenways/auth'
 import { KPICard, EmptyState } from '@greenways/ui'
 import { CheckSquare, Clock, CheckCircle2, AlertCircle } from 'lucide-react'
@@ -19,7 +19,14 @@ import taskService from '../lib/api/taskService'
 import strapiClient from '../lib/strapiClient'
 import { canReadPM } from '../lib/rbac'
 import { transformTask, transformUser, transformProject } from '../lib/api/dataTransformers'
+import { filterMajorTasks } from '../lib/taskListUtils'
 import { usePmDepartmentRevision } from '../context/PmDepartmentContext'
+
+const OPEN_TASK_STATUSES = new Set(['COMPLETED', 'CANCELLED'])
+
+function isOpenAssignedTask(task) {
+  return task && !OPEN_TASK_STATUSES.has(task.strapiStatus)
+}
 
 /**
  * Shared height for My Tasks + Upcoming Deadlines.
@@ -68,18 +75,35 @@ export default function DashboardPage() {
   const canViewProjects = canReadPM('projects')
   const canViewTasks = canReadPM('tasks') || canReadPM('my_tasks')
 
+  const openCollaboratorTasks = useMemo(
+    () => collaboratorTasks.filter(isOpenAssignedTask),
+    [collaboratorTasks]
+  )
+
+  const majorTasks = useMemo(() => filterMajorTasks(allTasks), [allTasks])
+
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true)
         const userId = getUserId()
 
-        const [projectsRes, allTasksRes, usersRes] = await Promise.allSettled([
+        const [projectsRes, allTasksRes, usersRes, assigneeRes, collabRes] = await Promise.allSettled([
           canViewProjects
             ? projectService.getAllProjects({ pageSize: 10, sort: 'updatedAt:desc' })
             : Promise.resolve({ data: [] }),
           canViewTasks ? taskService.fetchAllTasks({ pageSize: 500, sort: 'updatedAt:desc' }).then((data) => ({ data })) : Promise.resolve({ data: [] }),
           strapiClient.getXtrawrkxUsers({ pageSize: 200 }),
+          canViewTasks && userId
+            ? taskService.getPMTasksByAssignee(userId, { pageSize: 100 })
+            : Promise.resolve({ data: [] }),
+          userId
+            ? taskService.getCollaboratorTasks(userId, {
+                pageSize: 100,
+                sort: 'updatedAt:desc',
+                openOnly: true,
+              })
+            : Promise.resolve({ data: [] }),
         ])
 
         if (projectsRes.status === 'fulfilled') {
@@ -90,27 +114,29 @@ export default function DashboardPage() {
         if (allTasksRes.status === 'fulfilled') {
           const rawTasks = allTasksRes.value?.data || []
           const transformed = rawTasks.map(transformTask).filter(Boolean)
+          const major = filterMajorTasks(transformed)
           const now = new Date()
           setStats({
-            todo: transformed.filter((t) => t.strapiStatus === 'SCHEDULED').length,
-            inProgress: transformed.filter((t) => t.strapiStatus === 'IN_PROGRESS').length,
-            done: transformed.filter((t) => t.strapiStatus === 'COMPLETED').length,
-            overdue: transformed.filter(
+            todo: major.filter((t) => t.strapiStatus === 'SCHEDULED').length,
+            inProgress: major.filter((t) => t.strapiStatus === 'IN_PROGRESS').length,
+            done: major.filter((t) => t.strapiStatus === 'COMPLETED').length,
+            overdue: major.filter(
               (t) => t.dueDate && new Date(t.dueDate) < now && t.strapiStatus !== 'COMPLETED'
             ).length,
           })
           setAllTasks(transformed)
         }
 
-        if (canViewTasks && userId) {
-          try {
-            const mineRes = await taskService.getPMTasksByAssignee(userId, { pageSize: 100 })
-            setAssigneeTasks((mineRes?.data || []).map(transformTask).filter(Boolean))
-          } catch {
-            setAssigneeTasks([])
-          }
+        if (assigneeRes.status === 'fulfilled') {
+          setAssigneeTasks((assigneeRes.value?.data || []).map(transformTask).filter(Boolean))
         } else {
           setAssigneeTasks([])
+        }
+
+        if (collabRes.status === 'fulfilled') {
+          setCollaboratorTasks((collabRes.value?.data || []).map(transformTask).filter(Boolean))
+        } else {
+          setCollaboratorTasks([])
         }
 
         if (usersRes.status === 'fulfilled') {
@@ -125,16 +151,6 @@ export default function DashboardPage() {
           setPeople(transformed)
         }
 
-        if (userId) {
-          try {
-            const collabRes = await taskService.getCollaboratorTasks(userId, {
-              pageSize: 100,
-              sort: 'updatedAt:desc',
-              openOnly: true,
-            })
-            setCollaboratorTasks((collabRes?.data || []).map(transformTask).filter(Boolean))
-          } catch { }
-        }
       } catch (error) {
         console.error('Dashboard load error:', error)
       } finally {
@@ -222,8 +238,8 @@ export default function DashboardPage() {
       <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-5 lg:items-stretch">
         <div className={`lg:col-span-3 ${DASHBOARD_MAIN_ROW_CLASS}`}>
           <DashboardMyTasksWidget
-            tasks={collaboratorTasks}
-            totalCount={collaboratorTasks.length}
+            tasks={openCollaboratorTasks}
+            totalCount={openCollaboratorTasks.length}
             loading={false}
             className="w-full"
           />
@@ -238,8 +254,8 @@ export default function DashboardPage() {
 
       {/* Task overview, team workload, projects overview — content-sized, no min-height stretch */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <TaskOverviewWidget stats={stats} tasks={allTasks} />
-        <TeamWorkloadWidget people={people} tasks={allTasks} />
+        <TaskOverviewWidget stats={stats} tasks={majorTasks} />
+        <TeamWorkloadWidget people={people} tasks={majorTasks} />
         <ProjectsOverviewWidget projects={projects} canViewProjects={canViewProjects} />
       </div>
       </>

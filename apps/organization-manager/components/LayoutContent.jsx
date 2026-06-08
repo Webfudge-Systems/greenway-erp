@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@greenways/auth'
-import { AppShell } from '@greenways/ui'
+import { AppShell, PageLoader } from '@greenways/ui'
 import PlatformSidebar from './PlatformSidebar'
 import { ORG_MANAGER_SITE } from '../lib/site'
 
@@ -31,7 +31,7 @@ export default function LayoutContent({ children }) {
   }, [loading, isAuthenticated, isPublic, isPlatformAdmin, router])
 
   if (pathname === '/') {
-    return null
+    return <PageLoader message="Redirecting…" />
   }
 
   return (

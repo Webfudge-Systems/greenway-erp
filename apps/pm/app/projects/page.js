@@ -10,6 +10,7 @@ import {
   Button,
   Card,
   KPICard,
+  ListTableCardSkeleton,
   LoadingSpinner,
   Modal,
   Pagination,
@@ -1352,11 +1353,7 @@ export default function ProjectsPage() {
       </div>
 
       {loading ? (
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-          <div className="flex flex-col items-center justify-center p-12">
-            <LoadingSpinner size="lg" message="Loading projects..." />
-          </div>
-        </div>
+        <ListTableCardSkeleton rows={8} columns={6} />
       ) : activeView === 'kanban' ? (
         <div className="overflow-x-auto rounded-xl border border-gray-200 bg-gray-50/60">
           {projects.length === 0 ? (

@@ -17,12 +17,14 @@ export function AppShell({
 }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
-  const { isAuthenticated, loading } = useAuth()
+  const { isAuthenticated, loading, hasStoredToken } = useAuth()
   const pathname = usePathname()
   const router = useRouter()
 
   const isLoginPage = pathname === loginPath
   const isUnauthorizedPage = pathname === unauthorizedPath
+  const showShellWhileAuth =
+    loading && hasStoredToken && !isLoginPage && !isUnauthorizedPage
 
   useEffect(() => {
     if (!loading && !isAuthenticated && !isLoginPage && !isUnauthorizedPage) {
@@ -43,7 +45,7 @@ export function AppShell({
     }
   }, [mobileNavOpen])
 
-  if (loading) {
+  if (loading && !showShellWhileAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-4">
@@ -58,7 +60,7 @@ export function AppShell({
     return <>{children}</>
   }
 
-  if (isAuthenticated) {
+  if (isAuthenticated || showShellWhileAuth) {
     return (
       <div className="flex h-screen overflow-hidden bg-white">
         {mobileNav && mobileNavOpen ? (

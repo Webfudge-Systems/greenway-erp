@@ -1,9 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
-
 /**
- * Reusable loading spinner component
+ * Reusable loading spinner component (CSS-only — no framer-motion).
  */
 export default function LoadingSpinner({
   size = "md",
@@ -11,22 +9,18 @@ export default function LoadingSpinner({
   fullScreen = false,
 }) {
   const sizeClasses = {
-    sm: "w-4 h-4",
-    md: "w-8 h-8",
-    lg: "w-12 h-12",
-    xl: "w-16 h-16",
+    sm: "w-4 h-4 border-2",
+    md: "w-8 h-8 border-[3px]",
+    lg: "w-12 h-12 border-4",
+    xl: "w-16 h-16 border-4",
   };
 
   const spinner = (
     <div className="flex flex-col items-center justify-center gap-4">
-      <motion.div
-        className={`${sizeClasses[size]} border-4 border-gray-200 border-t-orange-500 rounded-full`}
-        animate={{ rotate: 360 }}
-        transition={{
-          duration: 1,
-          repeat: Infinity,
-          ease: "linear",
-        }}
+      <div
+        className={`${sizeClasses[size]} animate-spin rounded-full border-gray-200 border-t-orange-500`}
+        role="status"
+        aria-label={message || "Loading"}
       />
       {message && (
         <p className="text-sm text-gray-600 animate-pulse">{message}</p>
@@ -104,7 +98,6 @@ export function CardSkeleton() {
 export function TableSkeleton({ rows = 5, columns = 4 }) {
   return (
     <div className="animate-pulse space-y-3">
-      {/* Header */}
       <div
         className="grid"
         style={{ gridTemplateColumns: `repeat(${columns}, 1fr)`, gap: "1rem" }}
@@ -114,7 +107,6 @@ export function TableSkeleton({ rows = 5, columns = 4 }) {
         ))}
       </div>
 
-      {/* Rows */}
       {Array.from({ length: rows }).map((_, rowIndex) => (
         <div
           key={`row-${rowIndex}`}
@@ -132,6 +124,27 @@ export function TableSkeleton({ rows = 5, columns = 4 }) {
           ))}
         </div>
       ))}
+    </div>
+  );
+}
+
+/**
+ * Table skeleton inside the standard list-page card container.
+ */
+export function ListTableCardSkeleton({
+  rows = 8,
+  columns = 5,
+  className = "",
+}) {
+  return (
+    <div
+      className={`overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm ${className}`}
+      aria-busy="true"
+      aria-label="Loading table"
+    >
+      <div className="p-6">
+        <TableSkeleton rows={rows} columns={columns} />
+      </div>
     </div>
   );
 }
@@ -200,11 +213,7 @@ export function DashboardContentLoader({ message = "Loading dashboard..." }) {
       role="status"
       aria-live="polite"
     >
-      <motion.div
-        className="h-4 w-4 shrink-0 rounded-full border-2 border-gray-200 border-t-orange-500"
-        animate={{ rotate: 360 }}
-        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-      />
+      <div className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-gray-200 border-t-orange-500" />
       <span className="animate-pulse">{message}</span>
     </div>
   );

@@ -18,6 +18,7 @@ import {
   Button,
   Input,
   KPICard,
+  ListTableCardSkeleton,
   LoadingSpinner,
   Modal,
   Select,
@@ -420,8 +421,8 @@ export default function DepartmentsPage() {
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
         {loading ? (
-          <div className="flex items-center justify-center p-12">
-            <LoadingSpinner size="lg" message="Loading departments..." />
+          <div className="p-6">
+            <ListTableCardSkeleton rows={8} columns={5} className="border-0 shadow-none" />
           </div>
         ) : (
           <>

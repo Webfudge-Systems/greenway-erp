@@ -36,6 +36,14 @@ export const ORG_MANAGER_SITE = {
   ],
 };
 
+/** Temporary policy: each owner account may only belong to one organization. */
+export const ORGANIZATION_CREATION_LIMIT = {
+  maxPerUser: 1,
+  message:
+    'Each user can only have one organization. To create additional organizations, contact the Webfudge Systems Team.',
+  contactEmail: 'contact@greenwaymobility.in',
+};
+
 /** @deprecated Use ORG_MANAGER_SITE */
 export const LANDING_SITE = ORG_MANAGER_SITE;
 

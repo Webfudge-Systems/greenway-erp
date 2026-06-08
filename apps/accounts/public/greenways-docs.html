@@ -1,0 +1,1715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Greenways Suite — Webfudge Systems Docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0e12;
+    --bg-2: #11141a;
+    --bg-3: #181c24;
+    --bg-card: #1a1f2a;
+    --border: #252c3b;
+    --border-light: #2e3748;
+    --text: #eef1f6;
+    --text-muted: #b8c2d4;
+    --text-dim: #94a3b8;
+    --accent: #F05E0E;
+    --accent-2: #ff8a4c;
+    --accent-glow: rgba(240,94,14,0.12);
+    --green: #22c55e;
+    --green-bg: rgba(34,197,94,0.08);
+    --amber: #f59e0b;
+    --amber-bg: rgba(245,158,11,0.08);
+    --red: #ef4444;
+    --red-bg: rgba(239,68,68,0.08);
+    --sidebar-w: 280px;
+    --header-h: 56px;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'Sora', sans-serif;
+    --radius: 8px;
+    --radius-sm: 5px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: var(--header-h);
+    background: rgba(12,14,18,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px 0 0;
+    z-index: 100;
+  }
+
+  .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    width: var(--sidebar-w);
+    padding: 0 24px;
+    border-right: 1px solid var(--border);
+    height: 100%;
+  }
+
+  .brand-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+  }
+
+  .brand-icon {
+    width: 28px; height: 28px;
+    background: transparent;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+
+  .brand-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+
+  .brand-name span {
+    color: var(--accent);
+  }
+
+  .header-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-left: 24px;
+  }
+
+  .version-badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+
+  .search-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 6px 12px;
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: border-color 0.2s;
+    min-width: 200px;
+  }
+
+  .search-bar:hover { border-color: var(--border-light); }
+  .search-bar svg { opacity: 0.5; }
+
+  /* ── LAYOUT ── */
+  .layout {
+    display: flex;
+    min-height: 100vh;
+    padding-top: var(--header-h);
+  }
+
+  /* ── SIDEBAR ── */
+  aside {
+    width: var(--sidebar-w);
+    flex-shrink: 0;
+    position: fixed;
+    top: var(--header-h);
+    left: 0;
+    bottom: 0;
+    overflow-y: auto;
+    border-right: 1px solid var(--border);
+    background: var(--bg-2);
+    padding: 16px 0 40px;
+  }
+
+  aside::-webkit-scrollbar { width: 4px; }
+  aside::-webkit-scrollbar-track { background: transparent; }
+  aside::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .nav-section {
+    padding: 0 12px;
+    margin-bottom: 4px;
+  }
+
+  .nav-section-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    padding: 12px 12px 6px;
+    display: block;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 12px;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 400;
+    transition: all 0.15s;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .nav-item:hover {
+    background: var(--bg-3);
+    color: var(--text);
+  }
+
+  .nav-item.active {
+    background: var(--accent-glow);
+    color: var(--accent-2);
+    font-weight: 500;
+  }
+
+  .nav-item .nav-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    flex-shrink: 0;
+    margin-left: 3px;
+  }
+
+  .nav-item.active .nav-dot { background: var(--accent); }
+
+  .nav-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 8px 12px;
+  }
+
+  /* ── MAIN ── */
+  main {
+    margin-left: var(--sidebar-w);
+    flex: 1;
+    min-width: 0;
+    width: calc(100vw - var(--sidebar-w));
+    padding: 48px clamp(32px, 5vw, 72px) 96px;
+  }
+
+  /* ── SECTIONS ── */
+  .doc-section {
+    display: none;
+    animation: fadeIn 0.2s ease;
+  }
+
+  .doc-section.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── TYPOGRAPHY ── */
+  .page-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 10px;
+  }
+
+  h1 {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+    margin-bottom: 16px;
+    color: #fff;
+  }
+
+  h2 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: #fff;
+    margin: 40px 0 14px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+  }
+
+  h2:first-of-type { border-top: none; margin-top: 32px; }
+
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 28px 0 10px;
+  }
+
+  p { color: var(--text); margin-bottom: 14px; }
+
+  p:last-child { margin-bottom: 0; }
+
+  .lead {
+    font-size: 17px;
+    color: var(--text);
+    line-height: 1.6;
+    margin-bottom: 32px;
+    font-weight: 300;
+  }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    font-family: var(--mono);
+  }
+
+  .stat-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.02em;
+  }
+
+  /* ── APP CARDS ── */
+  .app-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin: 24px 0;
+  }
+
+  .app-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .app-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .app-card.orbit::before { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+  .app-card.base::before { background: linear-gradient(90deg, #1a1f2a, #252c3b); }
+  .app-card.erp::before { background: linear-gradient(90deg, #10b981, #34d399); }
+
+  .app-card:hover { border-color: var(--border-light); }
+
+  .app-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-family: var(--mono);
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+
+  .orbit .app-badge { background: rgba(139,92,246,0.15); color: #a78bfa; }
+  .base .app-badge { background: rgba(255,255,255,0.06); color: var(--text-muted); }
+  .erp .app-badge { background: rgba(16,185,129,0.1); color: #34d399; }
+
+  .app-card h4 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+
+  .app-card p {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .app-port {
+    margin-top: 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  /* ── TABLES ── */
+  .table-wrap { overflow-x: auto; margin: 16px 0; border-radius: var(--radius); border: 1px solid var(--border); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+
+  thead { background: var(--bg-3); }
+
+  th {
+    text-align: left;
+    padding: 10px 16px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 10px 16px;
+    color: var(--text);
+    border-top: 1px solid var(--border);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+
+  tr:hover td { background: rgba(255,255,255,0.015); }
+
+  td strong, td code { color: var(--text); }
+
+  /* ── CODE ── */
+  code {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    color: var(--accent-2);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  pre {
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    overflow-x: auto;
+    margin: 16px 0;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  pre code { background: none; border: none; padding: 0; color: inherit; font-size: inherit; }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-family: var(--mono);
+    white-space: nowrap;
+  }
+
+  .badge-green { background: var(--green-bg); color: var(--green); border: 1px solid rgba(34,197,94,0.2); }
+  .badge-amber { background: var(--amber-bg); color: var(--amber); border: 1px solid rgba(245,158,11,0.2); }
+  .badge-red { background: var(--red-bg); color: var(--red); border: 1px solid rgba(239,68,68,0.2); }
+  .badge-blue { background: rgba(255,255,255,0.05); color: var(--text); border: 1px solid var(--border-light); }
+
+  /* ── CALLOUTS ── */
+  .callout {
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    margin: 16px 0;
+    border-left: 3px solid;
+    font-size: 13.5px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .callout-icon { flex-shrink: 0; margin-top: 1px; }
+
+  .callout-content { color: var(--text); line-height: 1.6; }
+
+  .callout-content strong { color: var(--text); }
+
+  .callout.info { background: var(--accent-glow); border-color: var(--accent); }
+  .callout.warning { background: var(--amber-bg); border-color: var(--amber); }
+  .callout.danger { background: var(--red-bg); border-color: var(--red); }
+  .callout.success { background: var(--green-bg); border-color: var(--green); }
+
+  /* ── STEPS ── */
+  .steps { margin: 16px 0; }
+
+  .step {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 12px;
+    align-items: flex-start;
+  }
+
+  .step-num {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .step-content { flex: 1; color: var(--text); padding-top: 4px; font-size: 14px; }
+
+  .step-content strong { color: var(--text); }
+
+  /* ── PERMISSION GRID ── */
+  .perm-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin: 16px 0;
+  }
+
+  .perm-cell {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    text-align: center;
+  }
+
+  .perm-level {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+
+  .perm-desc { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+
+  /* ── URL LIST ── */
+  .url-list { margin: 12px 0; }
+
+  .url-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+
+  .url-label { color: var(--text-muted); min-width: 160px; font-weight: 500; }
+  .url-value { font-family: var(--mono); color: var(--accent-2); font-size: 12px; }
+
+  /* ── STATUS INDICATORS ── */
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: inline-block;
+  }
+
+  .dot-green { background: var(--green); box-shadow: 0 0 6px rgba(34,197,94,0.4); }
+  .dot-amber { background: var(--amber); }
+  .dot-red { background: var(--red); }
+
+  /* ── ROADMAP ── */
+  .roadmap-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13.5px;
+  }
+
+  .roadmap-item:last-child { border-bottom: none; }
+
+  .roadmap-feature { flex: 1; color: var(--text); }
+  .roadmap-location { font-size: 12px; color: var(--text-dim); min-width: 120px; text-align: right; }
+
+  /* ── FAQ ── */
+  .faq-item {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+
+  .faq-q {
+    padding: 14px 18px;
+    font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    user-select: none;
+    background: var(--bg-card);
+    transition: background 0.15s;
+  }
+
+  .faq-q:hover { background: var(--bg-3); }
+
+  .faq-q .chevron {
+    transition: transform 0.2s;
+    color: var(--text-dim);
+    flex-shrink: 0;
+  }
+
+  .faq-item.open .faq-q { background: var(--bg-3); }
+  .faq-item.open .chevron { transform: rotate(180deg); }
+
+  .faq-a {
+    display: none;
+    padding: 14px 18px;
+    background: var(--bg-2);
+    border-top: 1px solid var(--border);
+    color: var(--text);
+    font-size: 13.5px;
+    line-height: 1.7;
+  }
+
+  .faq-item.open .faq-a { display: block; }
+
+  /* ── GLOSSARY ── */
+  .glossary-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .glossary-row {
+    display: contents;
+  }
+
+  .glossary-term {
+    padding: 11px 18px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent-2);
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+  }
+
+  .glossary-def {
+    padding: 11px 18px;
+    font-size: 13px;
+    color: var(--text);
+    background: var(--bg-2);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+  }
+
+  .glossary-row:last-child .glossary-term,
+  .glossary-row:last-child .glossary-def { border-bottom: none; }
+
+  /* ── ARCH DIAGRAM ── */
+  .arch-diagram {
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    margin: 20px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .arch-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .arch-box {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    text-align: center;
+    min-width: 140px;
+    position: relative;
+  }
+
+  .arch-box::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 12px; right: 12px;
+    height: 2px;
+    border-radius: 1px;
+  }
+
+  .arch-box.orbit::before { background: #8b5cf6; }
+  .arch-box.base::before { background: #252c3b; }
+  .arch-box.erp::before { background: #10b981; }
+  .arch-box.api::before { background: #F05E0E; }
+
+  .arch-box-name { font-size: 13px; font-weight: 600; color: #fff; }
+  .arch-box-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; font-family: var(--mono); }
+  .arch-box-port { font-family: var(--mono); font-size: 10px; color: var(--text-dim); margin-top: 6px; }
+
+  .arch-connector {
+    width: 24px;
+    height: 1px;
+    background: var(--border-light);
+    position: relative;
+  }
+
+  .arch-arrow {
+    text-align: center;
+    color: var(--border-light);
+    font-size: 18px;
+    line-height: 1;
+    margin: 4px 0;
+  }
+
+  .arch-api { min-width: 220px; }
+
+  /* ── BACK TO TOP ── */
+  .scroll-top {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    width: 38px; height: 38px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all 0.2s;
+    z-index: 50;
+  }
+
+  .scroll-top:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── INLINE ITEMS ── */
+  ul { list-style: none; padding: 0; }
+
+  ul li {
+    padding: 5px 0 5px 20px;
+    color: var(--text);
+    font-size: 14px;
+    position: relative;
+  }
+
+  ul li::before {
+    content: '—';
+    position: absolute;
+    left: 0;
+    color: var(--text-dim);
+    font-size: 12px;
+  }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    :root { --sidebar-w: 240px; }
+    main { padding: 32px 32px 64px; }
+    .app-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  @media (max-width: 680px) {
+    aside { display: none; }
+    main { margin-left: 0; padding: 24px 20px; }
+    .app-grid { grid-template-columns: 1fr; }
+    .perm-grid { grid-template-columns: 1fr 1fr; }
+    .glossary-grid { grid-template-columns: 1fr; }
+    h1 { font-size: 26px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-brand">
+    <a class="brand-logo" href="#" style="gap:8px;">
+      
+      <img src="data:image/png;base64,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" alt="Webfudge" style="width:28px;height:28px;object-fit:contain;filter:none;"><span class="brand-name">Webfudge <span>Systems</span></span>
+    </a>
+  </div>
+  <div class="header-meta">
+    <div class="search-bar" onclick="document.querySelector('input').focus()">
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      Search documentation…
+    </div>
+    <span class="version-badge">v1.0 · June 2026</span>
+  </div>
+</header>
+
+<div class="layout">
+
+<!-- SIDEBAR -->
+<aside>
+  <span class="nav-section-label">Getting Started</span>
+  <div class="nav-section">
+    <a class="nav-item active" onclick="show('intro')"><span class="nav-dot"></span> Introduction</a>
+    <a class="nav-item" onclick="show('overview')"><span class="nav-dot"></span> System Overview</a>
+    <a class="nav-item" onclick="show('access')"><span class="nav-dot"></span> Access URLs</a>
+    <a class="nav-item" onclick="show('signin')"><span class="nav-dot"></span> Sign In</a>
+  </div>
+
+  <div class="nav-divider"></div>
+  <span class="nav-section-label">User Roles</span>
+  <div class="nav-section">
+    <a class="nav-item" onclick="show('roles')"><span class="nav-dot"></span> User Types & Roles</a>
+    <a class="nav-item" onclick="show('permissions')"><span class="nav-dot"></span> Permissions & Access</a>
+  </div>
+
+  <div class="nav-divider"></div>
+  <span class="nav-section-label">Applications</span>
+  <div class="nav-section">
+    <a class="nav-item" onclick="show('orbit')"><span class="nav-dot"></span> Orbit — Org Manager</a>
+    <a class="nav-item" onclick="show('base')"><span class="nav-dot"></span> Fudge Base — Accounts</a>
+    <a class="nav-item" onclick="show('erp')"><span class="nav-dot"></span> Fudge ERP</a>
+  </div>
+
+  <div class="nav-divider"></div>
+  <span class="nav-section-label">Administration</span>
+  <div class="nav-section">
+    <a class="nav-item" onclick="show('security')"><span class="nav-dot"></span> Security Settings</a>
+    <a class="nav-item" onclick="show('billing')"><span class="nav-dot"></span> Billing & Subscriptions</a>
+    <a class="nav-item" onclick="show('sitemap')"><span class="nav-dot"></span> Sitemap & Routes</a>
+  </div>
+
+  <div class="nav-divider"></div>
+  <span class="nav-section-label">Reference</span>
+  <div class="nav-section">
+    <a class="nav-item" onclick="show('roadmap')"><span class="nav-dot"></span> Feature Roadmap</a>
+    <a class="nav-item" onclick="show('faq')"><span class="nav-dot"></span> Troubleshooting & FAQ</a>
+    <a class="nav-item" onclick="show('glossary')"><span class="nav-dot"></span> Glossary</a>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main>
+
+  <!-- INTRODUCTION -->
+  <section class="doc-section active" id="sec-intro">
+    <div class="page-eyebrow">Getting Started</div>
+    <h1>Greenways Suite</h1>
+    <p class="lead">A multi-tenant business platform built for Greenway Mobility. Organization management, user administration, project delivery, and client relationships in one connected workspace.</p>
+
+    <div class="app-grid">
+      <div class="app-card orbit">
+        <div class="app-badge">ORBIT</div>
+        <h4>Organization Manager</h4>
+        <p>Create and manage all tenant organizations as a platform super admin.</p>
+        <div class="app-port">:3000</div>
+      </div>
+      <div class="app-card base">
+        <div class="app-badge">FUDGE BASE</div>
+        <h4>Accounts</h4>
+        <p>Users, roles, departments, security, billing, and audit logs.</p>
+        <div class="app-port">:3001</div>
+      </div>
+      <div class="app-card erp">
+        <div class="app-badge">FUDGE ERP</div>
+        <h4>Enterprise Resource Planning</h4>
+        <p>Projects, tasks, inbox, messages, clients, and calendar.</p>
+        <div class="app-port">:3002</div>
+      </div>
+    </div>
+
+    <h2>Who should read this?</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Audience</th><th>Primary Apps</th><th>Role</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Platform Super Admin</strong></td><td>Orbit</td><td><span class="badge badge-blue">Platform Admin</span></td></tr>
+          <tr><td><strong>Organization Admin</strong></td><td>Fudge Base (Accounts)</td><td><span class="badge badge-blue">Admin</span></td></tr>
+          <tr><td><strong>Managers & Team Members</strong></td><td>Fudge ERP</td><td><span class="badge badge-blue">Manager / Member</span></td></tr>
+          <tr><td><strong>IT / Operations</strong></td><td>All apps + Strapi Admin</td><td><span class="badge badge-blue">All</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- SYSTEM OVERVIEW -->
+  <section class="doc-section" id="sec-overview">
+    <div class="page-eyebrow">Architecture</div>
+    <h1>System Overview</h1>
+    <p class="lead">Three web applications sharing one Strapi 5 API backend, each serving a different user type and function.</p>
+
+    <div class="arch-diagram">
+      <div style="font-size:11px;font-family:var(--mono);color:var(--text-dim);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">GREENWAYS SUITE</div>
+      <div class="arch-row">
+        <div class="arch-box orbit">
+          <div class="arch-box-name">Orbit</div>
+          <div class="arch-box-sub">Org Manager</div>
+          <div class="arch-box-port">Port 3000</div>
+        </div>
+        <div class="arch-connector"></div>
+        <div class="arch-box base">
+          <div class="arch-box-name">Fudge Base</div>
+          <div class="arch-box-sub">Accounts</div>
+          <div class="arch-box-port">Port 3001</div>
+        </div>
+        <div class="arch-connector"></div>
+        <div class="arch-box erp">
+          <div class="arch-box-name">Fudge ERP</div>
+          <div class="arch-box-sub">ERP</div>
+          <div class="arch-box-port">Port 3002</div>
+        </div>
+      </div>
+      <div class="arch-arrow">↓</div>
+      <div class="arch-box api arch-api">
+        <div class="arch-box-name">Strapi 5 API</div>
+        <div class="arch-box-sub">Auth · RBAC · Data</div>
+        <div class="arch-box-port">Port 1337</div>
+      </div>
+    </div>
+
+    <h2>Application Reference</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Product Name</th><th>Internal Name</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Orbit</strong></td><td>Organization Manager</td><td>Create and manage tenant organizations</td></tr>
+          <tr><td><strong>Fudge Base</strong></td><td>Accounts</td><td>Users, roles, security, billing, audit</td></tr>
+          <tr><td><strong>Fudge ERP</strong></td><td>PM</td><td>Projects, tasks, inbox, messages, clients</td></tr>
+          <tr><td><strong>Strapi Admin</strong></td><td>API Admin</td><td>Developer/content admin interface</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ACCESS URLS -->
+  <section class="doc-section" id="sec-access">
+    <div class="page-eyebrow">Configuration</div>
+    <h1>Access URLs</h1>
+    <p class="lead">Production URLs for all applications and the API backend.</p>
+
+    <h2>Production</h2>
+    <div class="url-list">
+      <div class="url-item"><span class="url-label">Orbit (Org Manager)</span><span class="url-value">https://orbit.greenway.webfudge.in</span></div>
+      <div class="url-item"><span class="url-label">Fudge Base (Accounts)</span><span class="url-value">https://base.greenway.webfudge.in</span></div>
+      <div class="url-item"><span class="url-label">Fudge ERP (PM)</span><span class="url-value">https://erp.greenway.webfudge.in</span></div>
+      <div class="url-item"><span class="url-label">API Backend</span><span class="url-value">https://greenway-backend-production.up.railway.app</span></div>
+      <div class="url-item"><span class="url-label">Strapi Admin</span><span class="url-value">API URL + /admin</span></div>
+    </div>
+
+    <h2>Local Development</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>App</th><th>URL</th><th>Start Command</th></tr></thead>
+        <tbody>
+          <tr><td>Org Manager</td><td><code>localhost:3000</code></td><td><code>npm run dev:org-manager</code></td></tr>
+          <tr><td>Accounts</td><td><code>localhost:3001</code></td><td><code>npm run dev:accounts</code></td></tr>
+          <tr><td>Fudge ERP</td><td><code>localhost:3002</code></td><td><code>npm run dev:pm</code></td></tr>
+          <tr><td>API</td><td><code>localhost:1337</code></td><td><code>npm run dev:api</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Run all apps at once: <code>npm run dev:all</code></p>
+  </section>
+
+  <!-- SIGN IN -->
+  <section class="doc-section" id="sec-signin">
+    <div class="page-eyebrow">Getting Started</div>
+    <h1>Sign In</h1>
+
+    <h2>Standard User Login</h2>
+    <p>For Fudge Base and Fudge ERP users.</p>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-content">Open <strong>Fudge Base</strong> or <strong>Fudge ERP</strong> — you are redirected to <code>/login</code> if not signed in.</div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-content">Enter your <strong>email</strong> and <strong>password</strong>.</div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-content">Click <strong>Sign in</strong>. On success, your session is stored for <strong>7 days</strong>.</div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-content">If you belong to multiple organizations, the first organization is selected automatically.</div></div>
+    </div>
+    <div class="callout warning">
+      <span class="callout-icon">⚠️</span>
+      <div class="callout-content"><strong>Self-registration is disabled.</strong> Users must be invited by an organization admin or created during organization provisioning.</div>
+    </div>
+
+    <h2>Platform Super Admin Login</h2>
+    <p>Super admins log in to <strong>Orbit only</strong>.</p>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-content">Open <strong>Orbit</strong> — navigate to <code>/login</code>.</div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-content">Enter the platform super admin credentials.</div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-content">On success, you are taken to <code>/organizations</code>.</div></div>
+    </div>
+    <p>Non–super-admin users who attempt to log in to Orbit are redirected to <code>/unauthorized</code>.</p>
+
+    <h2>Session Behavior</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Behavior</th><th>Detail</th></tr></thead>
+        <tbody>
+          <tr><td>Session duration</td><td>7 days (JWT expiry)</td></tr>
+          <tr><td>Sign out</td><td>Clears token, org context, and department selection</td></tr>
+          <tr><td>Expired session</td><td>Redirected to login page</td></tr>
+          <tr><td>Multi-org</td><td>Active organization stored in browser as <code>current-org-id</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Switching Between Apps</h2>
+    <p>There is no in-app switcher. Navigate directly by URL, or use Orbit's launch buttons:</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>From</th><th>To</th><th>Method</th></tr></thead>
+        <tbody>
+          <tr><td>Orbit org detail</td><td>Fudge Base</td><td>Click <strong>Open Accounts</strong></td></tr>
+          <tr><td>Orbit org detail</td><td>Fudge ERP</td><td>Click <strong>Open ERP</strong></td></tr>
+          <tr><td>Any app</td><td>Another app</td><td>Open the URL directly</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ROLES -->
+  <section class="doc-section" id="sec-roles">
+    <div class="page-eyebrow">Access Control</div>
+    <h1>User Types & Roles</h1>
+
+    <h2>Platform Super Admin</h2>
+    <p>The highest level of access. Super admins can log in to <strong>Orbit only</strong> and manage all tenant organizations.</p>
+    <div class="card">
+      <div class="table-wrap" style="margin:0">
+        <table>
+          <thead><tr><th>Setting</th><th>Default</th></tr></thead>
+          <tbody>
+            <tr><td>Email</td><td><code>superadmin@greenways.in</code> (override via <code>PLATFORM_ADMIN_EMAIL</code>)</td></tr>
+            <tr><td>Password</td><td><code>Greenways@2026!</code> (override via <code>PLATFORM_ADMIN_PASSWORD</code>)</td></tr>
+            <tr><td>Display name</td><td>Platform Admin</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="callout danger">
+      <span class="callout-icon">🔐</span>
+      <div class="callout-content"><strong>Security:</strong> Change the default password immediately in production by setting the <code>PLATFORM_ADMIN_PASSWORD</code> environment variable on the API server.</div>
+    </div>
+
+    <h2>Organization-Level Roles</h2>
+    <p>Every user belongs to one or more organizations through an <strong>organization membership</strong>. Each membership has a role.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Role</th><th>Code</th><th>Summary</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Admin</strong></td><td><code>admin</code></td><td>Full access to all ERP modules</td></tr>
+          <tr><td><strong>Manager</strong></td><td><code>manager</code></td><td>Full ERP access except Settings (read-only)</td></tr>
+          <tr><td><strong>Member</strong></td><td><code>member</code></td><td>Limited write access; no invoices, proposals, or settings</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Organization admins can create <strong>custom roles</strong> in Fudge Base → Roles & Permissions.</p>
+
+    <h2>PM Row-Level Rules</h2>
+    <p>Fudge ERP applies additional access rules based on org role:</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Org Role</th><th>Create Projects</th><th>Edit Projects</th><th>Create Tasks</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Admin</strong></td><td><span class="badge badge-green">Yes</span></td><td>All projects</td><td>All projects</td></tr>
+          <tr><td><strong>Manager</strong></td><td><span class="badge badge-green">Yes</span></td><td>Only projects they manage</td><td>All projects</td></tr>
+          <tr><td><strong>Member</strong></td><td><span class="badge badge-red">No</span></td><td><span class="badge badge-red">No</span></td><td>Only assigned projects</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Permission Levels</h2>
+    <div class="perm-grid">
+      <div class="perm-cell"><div class="perm-level" style="color:var(--text-dim)">None</div><div class="perm-desc">No access to the module</div></div>
+      <div class="perm-cell"><div class="perm-level" style="color:var(--accent-2)">Read</div><div class="perm-desc">View only</div></div>
+      <div class="perm-cell"><div class="perm-level" style="color:var(--green)">Write</div><div class="perm-desc">Create and edit records</div></div>
+      <div class="perm-cell"><div class="perm-level" style="color:var(--amber)">Manage</div><div class="perm-desc">Full control including configuration</div></div>
+    </div>
+  </section>
+
+  <!-- PERMISSIONS -->
+  <section class="doc-section" id="sec-permissions">
+    <div class="page-eyebrow">Access Control</div>
+    <h1>Permissions & Access Control</h1>
+
+    <h2>How Permissions Work</h2>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-content">Each user has an <strong>organization membership</strong> with a <strong>role</strong>.</div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-content">The role defines a <strong>permission matrix</strong> for ERP modules.</div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-content">Individual users can have <strong>custom permission overrides</strong> on top of their role.</div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-content">The <strong>API enforces permissions</strong> on every request.</div></div>
+      <div class="step"><div class="step-num">5</div><div class="step-content">Frontends <strong>hide navigation items</strong> and actions the user cannot access.</div></div>
+    </div>
+
+    <h2>Default Role Permissions</h2>
+
+    <h3>Admin</h3>
+    <ul>
+      <li>ERP: <strong>Manage</strong> on all modules</li>
+    </ul>
+
+    <h3>Manager</h3>
+    <ul>
+      <li>ERP: <strong>Manage</strong> on all modules except Settings (<strong>Read</strong>)</li>
+    </ul>
+
+    <h3>Member</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Area</th><th>Module</th><th>Level</th></tr></thead>
+        <tbody>
+          
+          
+          <tr><td rowspan="3">ERP</td><td>Projects, Tasks, My Tasks, Calendar</td><td><span class="badge badge-green">Write</span></td></tr>
+          <tr><td>Dashboard, Inbox, Analytics</td><td><span class="badge badge-blue">Read</span></td></tr>
+          <tr><td>Settings</td><td><span class="badge badge-red">None</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Platform Admin Impersonation</h2>
+    <p>When a platform super admin opens an organization's Accounts or ERP workspace via Orbit:</p>
+    <ul>
+      <li>The org ID is set automatically in the browser</li>
+      <li>The admin receives full <strong>Admin-level permissions</strong> for that organization</li>
+      <li>This allows troubleshooting and setup without a separate user account</li>
+    </ul>
+  </section>
+
+  <!-- ORBIT -->
+  <section class="doc-section" id="sec-orbit">
+    <div class="page-eyebrow">Application</div>
+    <h1>Orbit — Organization Manager</h1>
+    <p class="lead">Platform super admin tool for provisioning and managing all tenant organizations.</p>
+
+    <div class="callout info">
+      <span class="callout-icon">🔑</span>
+      <div class="callout-content"><strong>Access:</strong> Platform super admins only · <code>orbit.greenway.webfudge.in</code></div>
+    </div>
+
+    <h2>Sidebar Navigation</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Menu Item</th><th>Route</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>Organizations</td><td><code>/organizations</code></td><td>List all tenant organizations</td></tr>
+          <tr><td>Create organization</td><td><code>/organizations/new</code></td><td>Provision a new tenant</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Organizations List</h2>
+    <ul>
+      <li><strong>KPI cards</strong> — Total, Active, Trial, Suspended org counts</li>
+      <li><strong>Status tabs</strong> — Filter by All, Active, Trial, Suspended</li>
+      <li><strong>Search</strong> — Find orgs by name or slug</li>
+      <li><strong>Organization table</strong> — Name, status, owner, created date, member count</li>
+    </ul>
+
+    <h2>Create Organization</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Field</th><th>Required?</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>Organization name</td><td><span class="badge badge-red">Required</span></td><td>Display name for the tenant workspace</td></tr>
+          <tr><td>Owner email</td><td><span class="badge badge-red">Required</span></td><td>Email for the primary admin user</td></tr>
+          <tr><td>Owner password</td><td><span class="badge badge-amber">Optional</span></td><td>Auto-generated if blank</td></tr>
+          <tr><td>Owner first / last name</td><td><span class="badge badge-amber">Optional</span></td><td>Admin user display name</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>What happens on create:</h3>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-content">A unique workspace <strong>slug</strong> is generated from the organization name.</div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-content">The owner user account is created (or linked if the email already exists).</div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-content">The owner is assigned the <strong>Admin</strong> role in the new organization.</div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-content">You are redirected to the new organization's detail page.</div></div>
+    </div>
+
+    <h2>Organization Detail Tabs</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Tab</th><th>Contents</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Overview</strong></td><td>Profile, status badge, status control, Open Accounts + Open ERP buttons</td></tr>
+          <tr><td><strong>Members</strong></td><td>Table of members: name, email, role, join date, active status</td></tr>
+          <tr><td><strong>Activities</strong></td><td>Timeline of platform-level events for this organization</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Organization Statuses</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Status</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-amber">Trial</span></td><td>Organization is in trial period</td></tr>
+          <tr><td><span class="badge badge-green">Active</span></td><td>Fully active, all features available</td></tr>
+          <tr><td><span class="badge badge-red">Suspended</span></td><td>Access restricted; organization is paused</td></tr>
+          <tr><td><span class="badge badge-red">Cancelled</span></td><td>Organization is deactivated</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Super Admin Workflow</h2>
+    <h3>Provisioning a new customer:</h3>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-content">Sign in to Orbit with super admin credentials.</div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-content">Go to <strong>Create organization</strong>.</div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-content">Enter company name and owner email; optionally set password and name.</div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-content">On the detail page, verify the profile and set status to <strong>Active</strong> or <strong>Trial</strong>.</div></div>
+      <div class="step"><div class="step-num">5</div><div class="step-content">Click <strong>Open Accounts</strong> to configure users and roles. Click <strong>Open ERP</strong> to verify workspace access.</div></div>
+    </div>
+  </section>
+
+  <!-- FUDGE BASE -->
+  <section class="doc-section" id="sec-base">
+    <div class="page-eyebrow">Application</div>
+    <h1>Fudge Base — Accounts</h1>
+    <p class="lead">Organization administration: users, roles, departments, security policies, billing, and audit logs.</p>
+
+    <div class="callout info">
+      <span class="callout-icon">🔑</span>
+      <div class="callout-content"><strong>Access:</strong> Organization members (Admin role required for Security page) · <code>base.greenway.webfudge.in</code></div>
+    </div>
+
+    <h2>Navigation</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Page</th><th>Route</th><th>Admin Only?</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Dashboard</td><td><code>/</code></td><td>No</td><td><span class="badge badge-green">Live</span></td></tr>
+          <tr><td>Users</td><td><code>/users</code></td><td>No</td><td><span class="badge badge-green">Live</span></td></tr>
+          <tr><td>Roles & Permissions</td><td><code>/roles</code></td><td>No</td><td><span class="badge badge-green">Live</span></td></tr>
+          <tr><td>Departments</td><td><code>/departments</code></td><td>No</td><td><span class="badge badge-green">Live</span></td></tr>
+          <tr><td>Teams</td><td><code>/teams</code></td><td>No</td><td><span class="badge badge-amber">Coming Soon</span></td></tr>
+          <tr><td>Security</td><td><code>/security</code></td><td><strong>Yes</strong></td><td><span class="badge badge-green">Live</span></td></tr>
+          <tr><td>Audit Logs</td><td><code>/audit-logs</code></td><td>No</td><td><span class="badge badge-green">Live</span></td></tr>
+          <tr><td>Organization</td><td><code>/settings</code></td><td>No</td><td><span class="badge badge-green">Live</span></td></tr>
+          <tr><td>App Access</td><td><code>/app-access</code></td><td>No</td><td><span class="badge badge-green">Live</span></td></tr>
+          <tr><td>Billing</td><td><code>/billing</code></td><td>No</td><td><span class="badge badge-green">Live</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Users (/users)</h2>
+    <p>Manage who has access to your organization.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Action</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Invite user</strong></td><td>Send an invitation with email, role, and department assignment</td></tr>
+          <tr><td><strong>Edit user</strong></td><td>Change role, departments, or profile details</td></tr>
+          <tr><td><strong>Suspend user</strong></td><td>Block the user from signing in</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>User statuses: <span class="badge badge-green">Active</span> <span class="badge badge-blue">Invited</span> <span class="badge badge-red">Suspended</span></p>
+
+    <h2>Roles & Permissions (/roles)</h2>
+    <p>Configure what each role can do across ERP modules.</p>
+    <p>Permission matrix covers <strong>ERP modules:</strong> Dashboard, Leads, Lead companies, Contacts, Deals & pipeline, Client accounts, Client projects, Invoices, Proposals, Meetings, Calendar, Analytics, Settings.</p>
+    <p><strong>PM modules:</strong> Dashboard, Projects, Tasks, My tasks, Inbox & messages, Calendar, Analytics, Settings.</p>
+    <p>Each cell is set to: <strong>None</strong>, <strong>Read</strong>, <strong>Write</strong>, or <strong>Manage</strong>.</p>
+
+    <h2>Security (/security) — Admin Only</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Setting</th><th>Options</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>Require MFA</td><td>On / Off</td><td>Require multi-factor authentication</td></tr>
+          <tr><td>Session timeout</td><td>1h, 4h, 8h, 24h, 7 days</td><td>Auto-logout after inactivity</td></tr>
+          <tr><td>Minimum password length</td><td>6–128 characters</td><td>Enforced on password changes</td></tr>
+          <tr><td>Allow password login</td><td>On / Off</td><td>Disable email/password login if needed</td></tr>
+          <tr><td>Allowed email domains</td><td>Comma-separated</td><td>Restrict sign-in to specific domains</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Audit Logs (/audit-logs)</h2>
+    <ul>
+      <li>Timeline view and Table view</li>
+      <li>Filter by module (Accounts, ERP) and by severity</li>
+      <li>Shows who did what, when, and on which record</li>
+    </ul>
+  </section>
+
+  <!-- FUDGE ERP -->
+  <section class="doc-section" id="sec-erp">
+    <div class="page-eyebrow">Application</div>
+    <h1>Fudge ERP</h1>
+    <p class="lead">Your team's workspace for projects, tasks, messages, and clients.</p>
+
+    <div class="callout info">
+      <span class="callout-icon">🔑</span>
+      <div class="callout-content"><strong>Access:</strong> Organization members with ERP module permissions · <code>erp.greenway.webfudge.in</code></div>
+    </div>
+
+    <h2>Sidebar Navigation</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Item</th><th>Route</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Dashboard</td><td><code>/</code></td><td><span class="badge badge-green">Live</span></td></tr>
+          <tr><td>My Tasks</td><td><code>/my-tasks</code></td><td><span class="badge badge-green">Live</span></td></tr>
+          <tr><td>Inbox</td><td><code>/inbox</code></td><td><span class="badge badge-green">Live</span></td></tr>
+          <tr><td>Messages</td><td><code>/message</code></td><td><span class="badge badge-green">Live</span></td></tr>
+          <tr><td>Clients</td><td><code>/clients/accounts</code></td><td><span class="badge badge-green">Live</span></td></tr>
+          <tr><td>Reports</td><td><code>/coming-soon?feature=reports</code></td><td><span class="badge badge-amber">Coming Soon</span></td></tr>
+          <tr><td>Documents</td><td><code>/coming-soon?feature=documents</code></td><td><span class="badge badge-amber">Coming Soon</span></td></tr>
+          <tr><td>Calendar</td><td><code>/calendar</code></td><td><span class="badge badge-green">Live</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>My Tasks (/my-tasks)</h2>
+    <p>View and manage tasks assigned to you across four view modes:</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>View</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><strong>List</strong></td><td>Table of tasks with sortable columns</td></tr>
+          <tr><td><strong>Kanban</strong></td><td>Drag-and-drop board by status</td></tr>
+          <tr><td><strong>Timeline</strong></td><td>Chronological task timeline</td></tr>
+          <tr><td><strong>Gantt</strong></td><td>Gantt chart for scheduling</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Task statuses: <strong>To Do → In Progress → In Review → Done → Cancelled</strong></p>
+    <p>Priority levels: <strong>Low · Medium · High · Urgent</strong></p>
+
+    <h2>Projects (/projects)</h2>
+    <ul>
+      <li><strong>List view</strong> — Table with sortable columns</li>
+      <li><strong>Kanban view</strong> — Board organized by project status</li>
+      <li><strong>Create project</strong> at <code>/projects/add</code> — Admin and Manager only</li>
+    </ul>
+    <p>Project statuses: <strong>Planning · Active · On Hold · Completed · Cancelled</strong></p>
+
+    <h3>Project Detail Tabs</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Tab</th><th>Contents</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Overview</strong></td><td>Project info, manager, team, dates, progress, description</td></tr>
+          <tr><td><strong>Tasks</strong></td><td>All tasks in this project</td></tr>
+          <tr><td><strong>Activity</strong></td><td>Timeline of project events</td></tr>
+          <tr><td><strong>Files</strong></td><td>Project file attachments</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Inbox (/inbox)</h2>
+    <ul>
+      <li><strong>Notifications</strong> — System notifications (read, unread, archived)</li>
+      <li><strong>Activity</strong> — Feed of ERP activity across the organization</li>
+      <li><strong>Threads</strong> — Notification threads grouped by topic</li>
+    </ul>
+
+    <h2>Messages (/message)</h2>
+    <ul>
+      <li>Conversation list with unread counts</li>
+      <li>Send and receive direct messages</li>
+      <li>@mentions of team members</li>
+      <li>Unread badge on the Message sidebar icon</li>
+    </ul>
+
+    <h2>PWA Support</h2>
+    <p>Fudge ERP is installable as a Progressive Web App. An install prompt may appear in supported browsers. Offline page available at <code>/~offline</code>.</p>
+  </section>
+
+
+
+  <!-- SECURITY -->
+  <section class="doc-section" id="sec-security">
+    <div class="page-eyebrow">Administration</div>
+    <h1>Security Settings</h1>
+    <p class="lead">Organization security is managed in Fudge Base → Security (Admin role only).</p>
+
+    <h2>Recommended Baseline</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Setting</th><th>Recommended Value</th></tr></thead>
+        <tbody>
+          <tr><td>Require MFA</td><td>On (when MFA is fully enforced)</td></tr>
+          <tr><td>Session timeout</td><td>8 hours</td></tr>
+          <tr><td>Minimum password length</td><td>12 characters</td></tr>
+          <tr><td>Allow password login</td><td>On</td></tr>
+          <tr><td>Allowed email domains</td><td>Your company domain(s)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Password Requirements</h2>
+    <ul>
+      <li>Minimum length enforced per organization settings (default: 8 characters)</li>
+      <li>Users cannot self-register; admins control who gets access</li>
+    </ul>
+
+    <h2>Session Management</h2>
+    <ul>
+      <li>JWT tokens expire after 7 days</li>
+      <li>Session timeout setting controls inactivity logout (when enforced by frontend)</li>
+      <li>Signing out clears all session data from the browser</li>
+    </ul>
+  </section>
+
+  <!-- BILLING -->
+  <section class="doc-section" id="sec-billing">
+    <div class="page-eyebrow">Administration</div>
+    <h1>Billing & Subscriptions</h1>
+    <p class="lead">Access billing in Fudge Base → Billing via Dashboard quick actions or <code>/billing</code>.</p>
+
+    <h2>Subscription Model</h2>
+    <ul>
+      <li>Each organization can have subscriptions per app (ERP, Accounts)</li>
+      <li>Pricing is calculated based on selected modules and seat count</li>
+      <li>Currency: <strong>INR (Indian Rupees)</strong></li>
+    </ul>
+
+    <h2>Billing Overview</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Section</th><th>Details</th></tr></thead>
+        <tbody>
+          <tr><td>Organization status</td><td>Trial, Active, Suspended, Cancelled</td></tr>
+          <tr><td>Seat utilization</td><td>Seats used vs. seats purchased</td></tr>
+          <tr><td>Per-app subscriptions</td><td>App name, status, billing cycle, seats, monthly price, next billing date</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Statuses & Billing Impact</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Status</th><th>Billing Impact</th></tr></thead>
+        <tbody>
+          <tr><td><span class="badge badge-amber">Trial</span></td><td>Limited trial period; may have trial end date</td></tr>
+          <tr><td><span class="badge badge-green">Active</span></td><td>Full billing applies</td></tr>
+          <tr><td><span class="badge badge-red">Suspended</span></td><td>Access may be restricted</td></tr>
+          <tr><td><span class="badge badge-red">Cancelled</span></td><td>Subscription ended</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout info">
+      <span class="callout-icon">ℹ️</span>
+      <div class="callout-content">Platform super admins manage organization status in <strong>Orbit</strong>. Organization admins view billing details in <strong>Fudge Base</strong>.</div>
+    </div>
+  </section>
+
+  <!-- SITEMAP -->
+  <section class="doc-section" id="sec-sitemap">
+    <div class="page-eyebrow">Reference</div>
+    <h1>Sitemap & Routes</h1>
+
+    <h2>Orbit — Organization Manager</h2>
+    <pre><code>/                          → Redirect to /login
+/login                     → Super admin sign in
+/unauthorized              → Access denied
+
+/organizations             → Organization list (KPIs, search, filters)
+/organizations/new         → Create organization form
+/organizations/[id]        → Organization detail
+  ├── Overview tab
+  ├── Members tab
+  └── Activities tab</code></pre>
+
+    <h2>Fudge Base — Accounts</h2>
+    <pre><code>/                          → Dashboard
+/login                     → Standard sign in
+/unauthorized              → Access denied
+/users                     → User management
+/roles                     → Roles & permissions matrix
+/departments               → Department management
+/teams                     → Teams (coming soon)
+/security                  → Security settings (Admin only)
+/audit-logs                → Audit log viewer
+/settings                  → Organization profile
+/app-access                → App enablement & role summary
+/billing                   → Billing & subscriptions</code></pre>
+
+    <h2>Fudge ERP</h2>
+    <pre><code>/                          → Dashboard
+/login                     → Standard sign in
+/my-tasks                  → My tasks (list/kanban/timeline/gantt)
+/my-tasks/add              → Create task
+/tasks/[id]                → Task detail
+
+/projects                  → Projects list
+/projects/add              → Create project
+/projects/[slug]            → Project detail
+/projects/[slug]/edit       → Edit project
+
+/inbox                     → Notifications & activity feed
+/message                   → Direct messages
+/clients/accounts          → Client accounts list
+/clients/accounts/new      → Create client
+/clients/accounts/[id]     → Client detail
+/calendar                  → Unified calendar</code></pre>
+
+    <h2>API — Key Endpoints</h2>
+    <pre><code>POST   /api/auth/login              → Standard login
+POST   /api/auth/platform-login     → Super admin login
+GET    /api/auth/me                 → Current user + memberships
+POST   /api/auth/signup             → Disabled
+
+GET    /api/platform/organizations  → List organizations (super admin)
+POST   /api/platform/organizations  → Create organization
+PATCH  /api/platform/organizations/:id → Update organization
+GET    /api/platform/stats          → Platform KPIs
+
+GET    /api/billing/overview        → Billing overview
+POST   /api/organizations/:id/invite-users → Invite users</code></pre>
+  </section>
+
+  <!-- ROADMAP -->
+  <section class="doc-section" id="sec-roadmap">
+    <div class="page-eyebrow">Reference</div>
+    <h1>Feature Roadmap</h1>
+    <p class="lead">Current status of all features in the Greenways Suite — built by <strong>Webfudge Systems</strong>.</p>
+
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="roadmap-item"><span class="status-dot dot-green"></span><span class="roadmap-feature">Organization provisioning</span><span class="roadmap-location">Orbit</span></div>
+      <div class="roadmap-item"><span class="status-dot dot-green"></span><span class="roadmap-feature">User management</span><span class="roadmap-location">Fudge Base</span></div>
+      <div class="roadmap-item"><span class="status-dot dot-green"></span><span class="roadmap-feature">Roles & permissions (RBAC)</span><span class="roadmap-location">Fudge Base</span></div>
+      <div class="roadmap-item"><span class="status-dot dot-green"></span><span class="roadmap-feature">Departments</span><span class="roadmap-location">Fudge Base + ERP</span></div>
+      <div class="roadmap-item"><span class="status-dot dot-green"></span><span class="roadmap-feature">Security settings</span><span class="roadmap-location">Fudge Base</span></div>
+      <div class="roadmap-item"><span class="status-dot dot-green"></span><span class="roadmap-feature">Audit logs</span><span class="roadmap-location">Fudge Base</span></div>
+      <div class="roadmap-item"><span class="status-dot dot-green"></span><span class="roadmap-feature">Billing overview</span><span class="roadmap-location">Fudge Base</span></div>
+      <div class="roadmap-item"><span class="status-dot dot-green"></span><span class="roadmap-feature">App access management</span><span class="roadmap-location">Fudge Base</span></div>
+      <div class="roadmap-item"><span class="status-dot dot-green"></span><span class="roadmap-feature">PM dashboard</span><span class="roadmap-location">Fudge ERP</span></div>
+      <div class="roadmap-item"><span class="status-dot dot-green"></span><span class="roadmap-feature">Projects & tasks</span><span class="roadmap-location">Fudge ERP</span></div>
+      <div class="roadmap-item"><span class="status-dot dot-green"></span><span class="roadmap-feature">My Tasks views (List/Kanban/Timeline/Gantt)</span><span class="roadmap-location">Fudge ERP</span></div>
+      <div class="roadmap-item"><span class="status-dot dot-green"></span><span class="roadmap-feature">Inbox & notifications</span><span class="roadmap-location">Fudge ERP</span></div>
+      <div class="roadmap-item"><span class="status-dot dot-green"></span><span class="roadmap-feature">Direct messages with @mentions</span><span class="roadmap-location">Fudge ERP</span></div>
+      <div class="roadmap-item"><span class="status-dot dot-green"></span><span class="roadmap-feature">Client accounts</span><span class="roadmap-location">Fudge ERP</span></div>
+      <div class="roadmap-item"><span class="status-dot dot-green"></span><span class="roadmap-feature">Calendar</span><span class="roadmap-location">Fudge ERP</span></div>
+      <div class="roadmap-item"><span class="status-dot dot-green"></span><span class="roadmap-feature">PWA support</span><span class="roadmap-location">Fudge ERP</span></div>
+      <div class="roadmap-item"><span class="status-dot dot-amber"></span><span class="roadmap-feature">Teams management</span><span class="roadmap-location">Page built; nav = coming soon</span></div>
+      <div class="roadmap-item"><span class="status-dot dot-amber"></span><span class="roadmap-feature">Global search (Accounts)</span><span class="roadmap-location">UI exists; not functional</span></div>
+      <div class="roadmap-item"><span class="status-dot dot-amber"></span><span class="roadmap-feature">MFA enforcement</span><span class="roadmap-location">Toggle available; full enforcement pending</span></div>
+      <div class="roadmap-item" style="border-bottom:none"><span class="status-dot dot-red"></span><span class="roadmap-feature">Reports / Analytics, Documents, Public signup</span><span class="roadmap-location">Not available</span></div>
+    </div>
+
+    <div style="display:flex;gap:16px;margin-top:16px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted)"><span class="status-dot dot-green"></span> Live</div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted)"><span class="status-dot dot-amber"></span> Partial / Coming Soon</div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted)"><span class="status-dot dot-red"></span> Not Available</div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="doc-section" id="sec-faq">
+    <div class="page-eyebrow">Support</div>
+    <h1>Troubleshooting & FAQ</h1>
+
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-q">I cannot log in <svg class="chevron" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19 9l-7 7-7-7"/></svg></div>
+      <div class="faq-a">
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><div class="step-content">Verify you are on the correct app URL — Orbit for super admin; Base or ERP for org users.</div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-content">Check your email and password.</div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-content">Ensure your account is not suspended.</div></div>
+          <div class="step"><div class="step-num">4</div><div class="step-content">For org users, confirm you have an active organization membership.</div></div>
+          <div class="step"><div class="step-num">5</div><div class="step-content">Contact your organization admin if you were never invited.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-q">I see "Unauthorized" after logging in <svg class="chevron" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19 9l-7 7-7-7"/></svg></div>
+      <div class="faq-a">
+        <ul>
+          <li><strong>On Orbit:</strong> Your account is not a platform super admin. Use Fudge Base or Fudge ERP instead.</li>
+          <li><strong>On Fudge Base Security page:</strong> You need the Admin role.</li>
+          <li><strong>On any page:</strong> Your role may not have permission for that module. Check with your admin.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-q">I cannot see a sidebar item in Fudge ERP <svg class="chevron" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19 9l-7 7-7-7"/></svg></div>
+      <div class="faq-a">Sidebar items are hidden based on your role permissions. Ask your organization admin to check <strong>Roles & Permissions</strong> in Fudge Base.</div>
+    </div>
+
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-q">I cannot create a project <svg class="chevron" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19 9l-7 7-7-7"/></svg></div>
+      <div class="faq-a">Only <strong>Admin</strong> and <strong>Manager</strong> roles can create projects. Members can work on tasks within projects they are assigned to but cannot create new projects.</div>
+    </div>
+
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-q">How do I switch organizations? <svg class="chevron" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19 9l-7 7-7-7"/></svg></div>
+      <div class="faq-a">If you belong to multiple organizations, your active organization is stored in the browser. Platform super admins switch via Orbit (Open Accounts / Open ERP). Standard users typically work within one organization — contact your admin if you need access to another.</div>
+    </div>
+
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-q">The app shows a network error on login <svg class="chevron" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19 9l-7 7-7-7"/></svg></div>
+      <div class="faq-a">
+        <p>The API backend may be down or misconfigured. Verify:</p>
+        <ul>
+          <li>The API is running (local: <code>http://localhost:1337</code>)</li>
+          <li><code>NEXT_PUBLIC_API_URL</code> points to the correct backend</li>
+          <li>CORS is configured for your frontend URL</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-q">How do I reset my password? <svg class="chevron" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19 9l-7 7-7-7"/></svg></div>
+      <div class="faq-a">Contact your organization admin. Self-service password reset may depend on deployment configuration.</div>
+    </div>
+
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-q">How do I add a new user to my organization? <svg class="chevron" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19 9l-7 7-7-7"/></svg></div>
+      <div class="faq-a">
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><div class="step-content">Sign in to <strong>Fudge Base</strong>.</div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-content">Go to <strong>Users</strong>.</div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-content">Click <strong>Invite user</strong>.</div></div>
+          <div class="step"><div class="step-num">4</div><div class="step-content">Enter email, select role and departments.</div></div>
+          <div class="step"><div class="step-num">5</div><div class="step-content">The user receives an invitation and can sign in once confirmed.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-q">How do I provision a new customer organization? <svg class="chevron" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19 9l-7 7-7-7"/></svg></div>
+      <div class="faq-a">
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><div class="step-content">Sign in to <strong>Orbit</strong> as platform super admin.</div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-content">Go to <strong>Create organization</strong>.</div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-content">Fill in organization name and owner email.</div></div>
+          <div class="step"><div class="step-num">4</div><div class="step-content">Set status on the detail page.</div></div>
+          <div class="step"><div class="step-num">5</div><div class="step-content">Use <strong>Open Accounts</strong> to configure the tenant.</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- GLOSSARY -->
+  <section class="doc-section" id="sec-glossary">
+    <div class="page-eyebrow">Reference</div>
+    <h1>Glossary</h1>
+    <p class="lead">Key terms used throughout the Greenways Suite — built by <strong>Webfudge Systems</strong>.</p>
+
+    <div class="glossary-grid">
+      <div class="glossary-row"><div class="glossary-term">Orbit</div><div class="glossary-def">Product name for the Organization Manager app</div></div>
+      <div class="glossary-row"><div class="glossary-term">Fudge Base</div><div class="glossary-def">Product name for the Accounts app</div></div>
+      <div class="glossary-row"><div class="glossary-term">Fudge ERP</div><div class="glossary-def">Product name for the ERP (enterprise resource planning) app</div></div>
+      <div class="glossary-row"><div class="glossary-term">Platform Super Admin</div><div class="glossary-def">Highest-level user; manages all tenants via Orbit</div></div>
+      <div class="glossary-row"><div class="glossary-term">Organization (Tenant)</div><div class="glossary-def">A customer workspace with its own users, data, and settings</div></div>
+      <div class="glossary-row"><div class="glossary-term">Org Membership</div><div class="glossary-def">Link between a user and an organization, carrying a role</div></div>
+      <div class="glossary-row"><div class="glossary-term">RBAC</div><div class="glossary-def">Role-Based Access Control — permissions defined per role per module</div></div>
+      <div class="glossary-row"><div class="glossary-term">Module</div><div class="glossary-def">A functional area (e.g., Projects, Client accounts) with its own permission level</div></div>
+      <div class="glossary-row"><div class="glossary-term">Department</div><div class="glossary-def">Organizational unit used to scope ERP data</div></div>
+      <div class="glossary-row"><div class="glossary-term">Client Account</div><div class="glossary-def">A record representing a customer company in Fudge ERP</div></div>
+      <div class="glossary-row"><div class="glossary-term">Slug</div><div class="glossary-def">URL-friendly unique identifier for an organization or project</div></div>
+      <div class="glossary-row"><div class="glossary-term">JWT</div><div class="glossary-def">JSON Web Token used for session authentication (7-day expiry)</div></div>
+      <div class="glossary-row"><div class="glossary-term">Strapi</div><div class="glossary-def">The headless CMS / API framework powering the backend</div></div>
+      <div class="glossary-row"><div class="glossary-term">PWA</div><div class="glossary-def">Progressive Web App — installable web application with offline support</div></div>
+    </div>
+  </section>
+
+</main>
+</div>
+
+<div class="scroll-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
+</div>
+
+<script>
+  function show(id) {
+    // hide all sections
+    document.querySelectorAll('.doc-section').forEach(s => s.classList.remove('active'));
+    // show target
+    const el = document.getElementById('sec-' + id);
+    if (el) el.classList.add('active');
+    // update nav
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    // scroll main to top
+    document.querySelector('main').scrollTop = 0;
+    window.scrollTo(0, 0);
+  }
+
+  function toggleFaq(item) {
+    item.classList.toggle('open');
+  }
+</script>
+
+<div style="position:fixed;bottom:0;left:var(--sidebar-w);right:0;height:36px;background:var(--bg-2);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:8px;z-index:40;">
+  <img src="data:image/png;base64,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" alt="Webfudge" style="width:16px;height:16px;object-fit:contain;">
+  <span style="font-size:11px;font-family:var(--mono);color:var(--text-muted);">Built by <span style="color:var(--accent);font-weight:600;">Webfudge Systems</span> &nbsp;·&nbsp; webfudge.in &nbsp;·&nbsp; v1.0 · June 2026</span>
+</div>
+</body>
+</html>

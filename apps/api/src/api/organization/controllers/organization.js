@@ -24,6 +24,7 @@ const {
   normalizeIdList,
 } = require('../../../utils/department-context');
 const { validateInviteEmailsForSecurity } = require('../../../utils/org-security-settings');
+const { assertUserCanCreateOrganization } = require('../../../utils/organization-limit');
 
 function getRolesAdminError(ctx, orgIdFromParams) {
   if (!ctx.state.user) return 'Missing or invalid credentials';
@@ -95,6 +96,8 @@ module.exports = createCoreController('api::organization.organization', ({ strap
     } = ctx.request.body;
 
     try {
+      await assertUserCanCreateOrganization(strapi, user.id);
+
       // Call onboarding service
       const result = await strapi.service('api::organization.organization').createWithOnboarding({
         userId: user.id,
