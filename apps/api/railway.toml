@@ -2,7 +2,7 @@
 # Override dashboard defaults that use --workspace=@greenways/api (monorepo root is not in the container).
 
 [build]
-builder = "NIXPACKS"
+builder = "RAILPACK"
 buildCommand = "npm run build"
 
 [deploy]
