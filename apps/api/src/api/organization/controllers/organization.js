@@ -25,6 +25,12 @@ const {
 } = require('../../../utils/department-context');
 const { validateInviteEmailsForSecurity } = require('../../../utils/org-security-settings');
 const { assertUserCanCreateOrganization } = require('../../../utils/organization-limit');
+const { logAccountsActivity, actorDisplayName } = require('../../../utils/crm-activity-log');
+const { usernameExists } = require('../../../utils/user-username');
+const {
+  transferUserAssignments,
+  removeUserFromOrgStructure,
+} = require('../../../utils/user-assignment-transfer');
 
 function getRolesAdminError(ctx, orgIdFromParams) {
   if (!ctx.state.user) return 'Missing or invalid credentials';
@@ -459,8 +465,19 @@ module.exports = createCoreController('api::organization.organization', ({ strap
   async updateUserMembership(ctx) {
     const { id, membershipId } = ctx.params;
     const user = ctx.state.user;
-    const { roleId, roleCode, roleName, isActive, status, departmentIds, primaryDepartmentId } =
-      ctx.request.body || {};
+    const {
+      roleId,
+      roleCode,
+      roleName,
+      isActive,
+      status,
+      email,
+      username,
+      password,
+      transferToUserId,
+      departmentIds,
+      primaryDepartmentId,
+    } = ctx.request.body || {};
 
     if (!user) {
       return ctx.unauthorized('Missing or invalid credentials');
@@ -514,20 +531,275 @@ module.exports = createCoreController('api::organization.organization', ({ strap
         });
       }
 
+      const targetUserId = membership?.user?.id;
+      const userUpdate = {};
+      let passwordChanged = false;
+      let transferCounts = null;
+      const wasSuspended = Boolean(membership?.user?.blocked);
+      const isSuspending = status === 'suspended' && !wasSuspended;
+
+      if (isSuspending && targetUserId) {
+        if (transferToUserId == null || String(transferToUserId).trim() === '') {
+          return ctx.badRequest('Select a user to receive open assignments before suspending');
+        }
+        if (Number(transferToUserId) === Number(targetUserId)) {
+          return ctx.badRequest('Cannot transfer assignments to the same user');
+        }
+        transferCounts = await transferUserAssignments(strapi, {
+          organizationId: id,
+          fromUserId: targetUserId,
+          toUserId: transferToUserId,
+        });
+      }
+
       if (status === 'suspended' || status === 'active') {
-        const shouldBlock = status === 'suspended';
-        const targetUserId = membership?.user?.id;
         if (targetUserId) {
-          await strapi.entityService.update('plugin::users-permissions.user', targetUserId, {
-            data: { blocked: shouldBlock },
-          });
+          userUpdate.blocked = status === 'suspended';
         }
       }
 
-      return ctx.send({ success: true });
+      if (targetUserId) {
+        const normalizedEmail =
+          typeof email === 'string' && email.trim() !== ''
+            ? email.trim().toLowerCase()
+            : null;
+        const normalizedUsername =
+          typeof username === 'string' && username.trim() !== '' ? username.trim() : null;
+
+        if (normalizedEmail) {
+          const emailTaken = await strapi.query('plugin::users-permissions.user').findOne({
+            where: { email: normalizedEmail },
+          });
+          if (emailTaken && String(emailTaken.id) !== String(targetUserId)) {
+            return ctx.badRequest('Email is already in use');
+          }
+          userUpdate.email = normalizedEmail;
+        }
+
+        if (normalizedUsername) {
+          if (normalizedUsername.length < 3) {
+            return ctx.badRequest('Name must be at least 3 characters');
+          }
+          const taken = await usernameExists(strapi, normalizedUsername, targetUserId);
+          if (taken) {
+            return ctx.badRequest('Name is already in use');
+          }
+          userUpdate.username = normalizedUsername;
+        }
+
+        if (Object.keys(userUpdate).length > 0) {
+          await strapi.entityService.update('plugin::users-permissions.user', targetUserId, {
+            data: userUpdate,
+          });
+        }
+
+        if (password != null && String(password).trim() !== '') {
+          if (!canManageOrganizationSecurity(ctx)) {
+            return ctx.forbidden('Only organization admins can change user passwords');
+          }
+
+          const org = await strapi.entityService.findOne('api::organization.organization', id, {
+            fields: ['securitySettings'],
+          });
+          const minLen = Number(org?.securitySettings?.passwordMinLength) || 8;
+          const normalizedPassword = String(password).trim();
+          if (normalizedPassword.length < minLen) {
+            return ctx.badRequest(`Password must be at least ${minLen} characters`);
+          }
+
+          await strapi.plugins['users-permissions'].services.user.edit(targetUserId, {
+            password: normalizedPassword,
+          });
+          passwordChanged = true;
+        }
+      }
+
+      try {
+        const targetEmail =
+          membership?.user?.email || membership?.user?.username || `member #${membershipId}`;
+        const actorName = await actorDisplayName(strapi, user.id);
+        const changes = [];
+        if (typeof isActive === 'boolean') {
+          changes.push({
+            key: 'isActive',
+            label: 'Active',
+            before: membership.isActive ? 'Yes' : 'No',
+            after: isActive ? 'Yes' : 'No',
+          });
+        }
+        if (status === 'suspended' || status === 'active') {
+          changes.push({
+            key: 'status',
+            label: 'Status',
+            before: membership?.user?.blocked ? 'Suspended' : 'Active',
+            after: status === 'suspended' ? 'Suspended' : 'Active',
+          });
+        }
+        if (userUpdate.email) {
+          changes.push({
+            key: 'email',
+            label: 'Email',
+            before: membership?.user?.email || '—',
+            after: userUpdate.email,
+          });
+        }
+        if (userUpdate.username) {
+          changes.push({
+            key: 'username',
+            label: 'Name',
+            before: membership?.user?.username || '—',
+            after: userUpdate.username,
+          });
+        }
+        if (passwordChanged) {
+          changes.push({
+            key: 'password',
+            label: 'Password',
+            before: '—',
+            after: 'Updated',
+          });
+        }
+        if (transferCounts) {
+          changes.push({
+            key: 'assignmentsTransferred',
+            label: 'Assignments transferred',
+            before: '—',
+            after: 'Yes',
+          });
+        }
+        if (membershipUpdate.role != null) {
+          const prevRoleName = membership?.role?.name || membership?.role?.code || '—';
+          const newRole = await strapi.entityService.findOne(ORG_ROLE_UID, membershipUpdate.role, {
+            fields: ['name', 'code'],
+          });
+          const newRoleName = newRole?.name || newRole?.code || String(membershipUpdate.role);
+          changes.push({
+            key: 'role',
+            label: 'Role',
+            before: prevRoleName,
+            after: newRoleName,
+          });
+        }
+        if (
+          changes.length > 0 ||
+          Object.keys(membershipUpdate).length > 0 ||
+          Object.keys(userUpdate).length > 0 ||
+          passwordChanged
+        ) {
+          const parts = changes.map((c) => c.label).join(', ');
+          const summary =
+            changes.length > 0
+              ? `${actorName} updated ${targetEmail} (${parts})`
+              : `${actorName} updated ${targetEmail}`;
+          await logAccountsActivity(strapi, {
+            organizationId: id,
+            actorUserId: user.id,
+            action: 'update',
+            subjectType: 'organization_user',
+            subjectId: membership.id,
+            summary,
+            meta: {
+              email: targetEmail,
+              module: 'accounts',
+              ...(transferCounts ? { transferCounts } : {}),
+              ...(changes.length > 0 ? { changes } : {}),
+            },
+          });
+        }
+      } catch (_) {
+        /* logging is best-effort */
+      }
+
+      return ctx.send({ success: true, ...(transferCounts ? { transferCounts } : {}) });
     } catch (error) {
       console.error('Error updating organization membership:', error);
       return ctx.badRequest(error.message || 'Failed to update membership');
+    }
+  },
+
+  async deleteUserMembership(ctx) {
+    const { id, membershipId } = ctx.params;
+    const user = ctx.state.user;
+    const transferToUserId = ctx.query?.transferToUserId ?? ctx.request.body?.transferToUserId;
+
+    if (!user) {
+      return ctx.unauthorized('Missing or invalid credentials');
+    }
+    if (!canManageOrganizationSecurity(ctx)) {
+      return ctx.forbidden('Only organization admins can remove users');
+    }
+
+    try {
+      const hasAccess = await strapi.service('api::organization.organization').checkUserAccess(id, user.id);
+      if (!hasAccess) {
+        return ctx.forbidden('You do not have access to this organization');
+      }
+
+      const memberships = await strapi.entityService.findMany('api::organization-user.organization-user', {
+        filters: { id: membershipId, organization: id, isActive: true },
+        populate: { user: true },
+        limit: 1,
+      });
+
+      if (!memberships.length) {
+        return ctx.notFound('Membership not found');
+      }
+
+      /** @type {any} */
+      const membership = memberships[0];
+      const targetUserId = membership?.user?.id;
+      if (!targetUserId) {
+        return ctx.badRequest('User account not found for this membership');
+      }
+      if (Number(targetUserId) === Number(user.id)) {
+        return ctx.badRequest('You cannot remove your own account');
+      }
+      if (transferToUserId == null || String(transferToUserId).trim() === '') {
+        return ctx.badRequest('Select a user to receive open assignments before removing this user');
+      }
+      if (Number(transferToUserId) === Number(targetUserId)) {
+        return ctx.badRequest('Cannot transfer assignments to the same user');
+      }
+
+      const transferCounts = await transferUserAssignments(strapi, {
+        organizationId: id,
+        fromUserId: targetUserId,
+        toUserId: transferToUserId,
+      });
+      await removeUserFromOrgStructure(strapi, {
+        organizationId: id,
+        userId: targetUserId,
+      });
+
+      await strapi.entityService.update('api::organization-user.organization-user', membership.id, {
+        data: { isActive: false },
+      });
+
+      try {
+        const targetEmail =
+          membership?.user?.email || membership?.user?.username || `member #${membershipId}`;
+        const actorName = await actorDisplayName(strapi, user.id);
+        await logAccountsActivity(strapi, {
+          organizationId: id,
+          actorUserId: user.id,
+          action: 'delete',
+          subjectType: 'organization_user',
+          subjectId: membership.id,
+          summary: `${actorName} removed ${targetEmail} from the organization`,
+          meta: {
+            email: targetEmail,
+            module: 'accounts',
+            transferCounts,
+          },
+        });
+      } catch (_) {
+        /* logging is best-effort */
+      }
+
+      return ctx.send({ success: true, transferCounts });
+    } catch (error) {
+      console.error('Error removing organization membership:', error);
+      return ctx.badRequest(error.message || 'Failed to remove user');
     }
   },
 

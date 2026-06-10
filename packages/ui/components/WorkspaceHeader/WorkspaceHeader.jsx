@@ -14,9 +14,7 @@ import {
   Image,
   LogOut,
   Search,
-  Settings,
   Upload,
-  User,
 } from 'lucide-react'
 import {
   useAuth,
@@ -233,9 +231,6 @@ export function WorkspaceHeader({
   const profileEmail = (user?.attributes || user)?.email || user?.email || ''
   const premiumAvatarClass =
     'bg-gradient-to-br from-orange-500 to-orange-600 border-2 border-white shadow-lg text-white font-bold'
-  const profileMenuItemClass =
-    'w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-brand-foreground transition-colors hover:bg-brand-hover'
-  const profileMenuIconClass = 'h-[18px] w-[18px] shrink-0 text-brand-text-light stroke-[2.2]'
 
   const profileControls = showProfile ? (
     <div className="flex shrink-0 items-center gap-2 sm:gap-3">
@@ -405,20 +400,6 @@ export function WorkspaceHeader({
                       </p>
                     </div>
                   </div>
-                </div>
-                <div className="mx-4 border-t border-neutral-200/60" />
-                <div className="p-2">
-                  <p className="px-3 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-wide text-brand-text-light">
-                    Account Actions
-                  </p>
-                  <button className={profileMenuItemClass}>
-                    <User className={profileMenuIconClass} />
-                    <span>View Profile</span>
-                  </button>
-                  <button className={profileMenuItemClass}>
-                    <Settings className={profileMenuIconClass} />
-                    <span>Settings</span>
-                  </button>
                 </div>
                 <div className="mx-4 border-t border-neutral-200/60" />
                 <div className="p-2">

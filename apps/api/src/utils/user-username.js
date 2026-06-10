@@ -49,4 +49,5 @@ module.exports = {
   normalizeUserUsername,
   uniqueUsernameFromEmail,
   usernameFromEmail,
+  usernameExists,
 };

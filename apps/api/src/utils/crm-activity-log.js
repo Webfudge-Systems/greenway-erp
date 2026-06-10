@@ -412,6 +412,43 @@ function buildFieldChanges(previous, patch) {
   return out;
 }
 
+/**
+ * Persist Accounts / org-admin timeline rows (users, invites, roles).
+ * Uses the same crm-activity store as CRM/PM so the org-wide feed includes them.
+ */
+async function logAccountsActivity(strapi, params) {
+  const { organizationId, actorUserId, action, subjectType, subjectId, summary, meta } = params;
+  if (!organizationId || !subjectType || subjectId == null) return;
+
+  const sid = Number(subjectId);
+  if (Number.isNaN(sid)) return;
+
+  const row = {
+    organization: organizationId,
+    actor: actorUserId ?? null,
+    action,
+    subjectType,
+    subjectId: sid,
+    leadCompany: null,
+    summary: summary || `${action} ${subjectType}`,
+  };
+  if (meta && typeof meta === 'object' && Object.keys(meta).length > 0) {
+    row.meta = meta;
+  }
+
+  try {
+    await strapi.entityService.create(ACTIVITY_UID, { data: row });
+  } catch (err) {
+    strapi.log.warn(
+      'accounts-activity-log: failed to write activity (%s %s:%s): %s',
+      action,
+      subjectType,
+      sid,
+      err?.message || err
+    );
+  }
+}
+
 async function actorDisplayName(strapi, actorUserId) {
   if (!actorUserId) return 'System';
   try {
@@ -427,6 +464,7 @@ async function actorDisplayName(strapi, actorUserId) {
 module.exports = {
   ACTIVITY_UID,
   logCrmActivity,
+  logAccountsActivity,
   actorDisplayName,
   collectChangedKeys,
   buildFieldChanges,
