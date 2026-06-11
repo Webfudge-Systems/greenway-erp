@@ -55,6 +55,9 @@ export function AppPageHeader({
   notificationService,
   renderGlobalSearchModal,
   searchInputClassName = DEFAULT_SEARCH_INPUT_CLASS,
+  showBack = false,
+  onBack,
+  backLabel = 'Back',
 }) {
   return (
     <WorkspaceHeader
@@ -77,6 +80,9 @@ export function AppPageHeader({
       notificationService={notificationService}
       renderGlobalSearchModal={renderGlobalSearchModal}
       searchInputClassName={searchInputClassName}
+      showBack={showBack}
+      onBack={onBack}
+      backLabel={backLabel}
     >
       {children}
     </WorkspaceHeader>

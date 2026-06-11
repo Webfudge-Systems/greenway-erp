@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@greenways/auth'
 import { Building2, Loader2, Menu } from 'lucide-react'
+import { WorkspaceTopBar } from './WorkspaceTopBar'
 
 export function AppShell({
   children,
@@ -12,11 +13,17 @@ export function AppShell({
   unauthorizedPath = '/unauthorized',
   loadingMessage = 'Loading...',
   redirectingMessage = 'Redirecting to login...',
+  /** 'collapse' narrows the sidebar; 'hide' removes it entirely with a top bar to reopen. */
+  sidebarBehavior = 'collapse',
+  /** Shown in the top bar when sidebar is hidden (logo + label). */
+  sidebarBranding,
   mobileNav = false,
   mobileNavTitle = 'Webfudge Systems',
 }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [sidebarHidden, setSidebarHidden] = useState(false)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const isHideMode = sidebarBehavior === 'hide'
   const { isAuthenticated, loading, hasStoredToken } = useAuth()
   const pathname = usePathname()
   const router = useRouter()
@@ -45,6 +52,26 @@ export function AppShell({
     }
   }, [mobileNavOpen])
 
+  const handleOpenSidebar = () => {
+    if (mobileNav) {
+      setMobileNavOpen(true)
+      return
+    }
+    setSidebarHidden(false)
+  }
+
+  const handleSidebarToggle = () => {
+    if (isHideMode) {
+      if (mobileNav && mobileNavOpen) {
+        setMobileNavOpen(false)
+        return
+      }
+      setSidebarHidden(true)
+      return
+    }
+    setSidebarCollapsed((value) => !value)
+  }
+
   if (loading && !showShellWhileAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
@@ -61,55 +88,66 @@ export function AppShell({
   }
 
   if (isAuthenticated || showShellWhileAuth) {
+    const showSidebar =
+      Sidebar && (!isHideMode || !sidebarHidden || (mobileNav && mobileNavOpen))
+    const showTopBar = isHideMode && sidebarHidden && !(mobileNav && mobileNavOpen)
+
     return (
-      <div className="flex h-screen overflow-hidden bg-white">
-        {mobileNav && mobileNavOpen ? (
-          <button
-            type="button"
-            className="fixed inset-0 z-40 bg-black/40 lg:hidden"
-            aria-label="Close navigation menu"
-            onClick={() => setMobileNavOpen(false)}
-          />
+      <div className="flex h-screen flex-col overflow-hidden bg-white">
+        {showTopBar ? (
+          <WorkspaceTopBar onOpenSidebar={handleOpenSidebar} branding={sidebarBranding} />
         ) : null}
 
-        {Sidebar ? (
-          <div
-            className={
-              mobileNav
-                ? `fixed inset-y-0 left-0 z-50 h-full shrink-0 transition-transform duration-300 ease-out lg:relative lg:z-auto lg:translate-x-0 ${
-                    mobileNavOpen ? 'translate-x-0' : '-translate-x-full'
-                  }`
-                : 'shrink-0'
-            }
-          >
-            <Sidebar
-              collapsed={mobileNav ? false : sidebarCollapsed}
-              onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
-              onMobileClose={() => setMobileNavOpen(false)}
-              isMobileDrawer={mobileNav}
+        <div className="flex min-h-0 flex-1 overflow-hidden">
+          {mobileNav && mobileNavOpen ? (
+            <button
+              type="button"
+              className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+              aria-label="Close navigation menu"
+              onClick={() => setMobileNavOpen(false)}
             />
-          </div>
-        ) : null}
-
-        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-          {mobileNav ? (
-            <header className="flex shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-4 py-3 lg:hidden">
-              <button
-                type="button"
-                onClick={() => setMobileNavOpen(true)}
-                className="rounded-lg p-2 text-gray-700 transition-colors hover:bg-gray-100"
-                aria-label="Open navigation menu"
-              >
-                <Menu className="h-5 w-5" />
-              </button>
-              <div className="flex min-w-0 flex-1 items-center gap-2">
-                <Building2 className="h-5 w-5 shrink-0 text-brand-primary" />
-                <span className="truncate text-sm font-semibold text-gray-900">{mobileNavTitle}</span>
-              </div>
-            </header>
           ) : null}
 
-          <main className="flex-1 overflow-y-auto overflow-x-hidden bg-white">{children}</main>
+          {showSidebar ? (
+            <div
+              className={
+                mobileNav
+                  ? `fixed inset-y-0 left-0 z-50 h-full shrink-0 transition-transform duration-300 ease-out lg:relative lg:z-auto lg:translate-x-0 ${
+                      mobileNavOpen ? 'translate-x-0' : '-translate-x-full'
+                    }`
+                  : 'shrink-0'
+              }
+            >
+              <Sidebar
+                collapsed={isHideMode ? false : sidebarCollapsed}
+                onToggle={handleSidebarToggle}
+                onMobileClose={() => setMobileNavOpen(false)}
+                isMobileDrawer={mobileNav && mobileNavOpen}
+                sidebarBehavior={sidebarBehavior}
+              />
+            </div>
+          ) : null}
+
+          <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+            {mobileNav && !showTopBar ? (
+              <header className="flex shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-4 py-3 lg:hidden">
+                <button
+                  type="button"
+                  onClick={() => setMobileNavOpen(true)}
+                  className="rounded-lg p-2 text-gray-700 transition-colors hover:bg-gray-100"
+                  aria-label="Open navigation menu"
+                >
+                  <Menu className="h-5 w-5" />
+                </button>
+                <div className="flex min-w-0 flex-1 items-center gap-2">
+                  <Building2 className="h-5 w-5 shrink-0 text-brand-primary" />
+                  <span className="truncate text-sm font-semibold text-gray-900">{mobileNavTitle}</span>
+                </div>
+              </header>
+            ) : null}
+
+            <main className="flex-1 overflow-y-auto overflow-x-hidden bg-white">{children}</main>
+          </div>
         </div>
       </div>
     )

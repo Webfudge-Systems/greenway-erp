@@ -154,7 +154,7 @@ export default function TaskDetailsCard({
   taskInfoDraft,
   isRecurring = false,
   draftRecurring = false,
-  isPmMember = false,
+  canEdit = false,
   saving = false,
   users = [],
   projects = [],
@@ -174,7 +174,7 @@ export default function TaskDetailsCard({
   onViewSubtasks,
   formatDate,
 }) {
-  const canEdit = !isPmMember && onOpenSectionEdit
+  const showEdit = canEdit && onOpenSectionEdit
 
   if (editing && taskInfoDraft) {
     return (
@@ -594,7 +594,7 @@ export default function TaskDetailsCard({
 
       {/* Edit actions */}
       <div className="border-t border-gray-100 bg-gray-50/50 px-4 py-4 text-center">
-        {canEdit ? (
+        {showEdit ? (
           <p className="text-sm text-gray-600">
             <button
               type="button"

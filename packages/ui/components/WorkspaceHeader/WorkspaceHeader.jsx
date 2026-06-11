@@ -23,6 +23,7 @@ import {
   resolveUserRole,
 } from '@greenways/auth'
 import { Avatar, Card } from '../index'
+import { WorkspaceBackButton } from '../WorkspaceBackButton'
 import { LoadingSpinner } from '../../feedback'
 import { PAGE_HEADER_SEARCH_INPUT_CLASS } from '../../utils/pageHeaderToolbar'
 
@@ -51,6 +52,9 @@ export function WorkspaceHeader({
   actionButtonClassName,
   notificationDropdownClassName,
   profileDropdownClassName,
+  showBack = false,
+  onBack,
+  backLabel = 'Back',
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -231,6 +235,7 @@ export function WorkspaceHeader({
   const profileEmail = (user?.attributes || user)?.email || user?.email || ''
   const premiumAvatarClass =
     'bg-gradient-to-br from-orange-500 to-orange-600 border-2 border-white shadow-lg text-white font-bold'
+  const handleBack = onBack ?? (() => router.back())
 
   const profileControls = showProfile ? (
     <div className="flex shrink-0 items-center gap-2 sm:gap-3">
@@ -426,6 +431,11 @@ export function WorkspaceHeader({
     <Card glass className="relative z-[40]">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-4 lg:flex lg:items-start lg:justify-between">
         <div className="min-w-0 lg:order-1 lg:flex-1">
+          {showBack ? (
+            <div className="mb-1">
+              <WorkspaceBackButton onClick={handleBack} label={backLabel} />
+            </div>
+          ) : null}
           {breadcrumbItems.length > 0 && (
             <div className="mb-2 hidden items-center gap-2 text-sm text-brand-text-light sm:flex">
               {breadcrumbItems.map((item, index) => (

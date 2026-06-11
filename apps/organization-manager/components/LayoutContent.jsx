@@ -39,8 +39,14 @@ export default function LayoutContent({ children }) {
       sidebar={PlatformSidebar}
       loginPath="/login"
       unauthorizedPath="/unauthorized"
+      sidebarBehavior="hide"
+      sidebarBranding={{
+        logoPath: ORG_MANAGER_SITE.logoPath,
+        brandName: ORG_MANAGER_SITE.brandName,
+        homeHref: '/organizations',
+      }}
       mobileNav
-      mobileNavTitle={ORG_MANAGER_SITE.shortName}
+      mobileNavTitle={ORG_MANAGER_SITE.productName}
     >
       {children}
     </AppShell>

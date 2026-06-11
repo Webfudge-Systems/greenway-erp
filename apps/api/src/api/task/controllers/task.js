@@ -26,8 +26,10 @@ const {
   isPmOrgMemberRole,
   isPmOrgAdminRole,
   isPmOrgManagerRole,
+  buildProjectListFiltersForUser,
   relationId,
   userCanAccessProjectRow,
+  userCanViewProjectRow,
 } = require('../../../utils/rbac');
 const { mergeDepartmentScopeFilter } = require('../../../utils/department-context');
 const {
@@ -221,18 +223,62 @@ function userMayApproveTaskAssignments(ctx) {
   return isPmOrgAdminRole(ctx) || isPmOrgManagerRole(ctx);
 }
 
-async function memberMayCreateTaskOnProjects(strapi, orgId, userId, data) {
-  const pids = projectIdsFromProjectsInput(data.projects);
-  if (!pids.length) return false;
+function userIsTaskAssigneeOrCollaborator(task, userId) {
+  if (!task || userId == null) return false;
+  const aid = relationId(task.assignee);
+  if (aid != null && Number(aid) === Number(userId)) return true;
+  return collaboratorIdsFromEntity(task).some((id) => Number(id) === Number(userId));
+}
+
+async function loadProjectForAccessCheck(strapi, orgId, projectPk) {
+  const proj = await strapi.entityService.findOne(PROJECT_UID, projectPk, {
+    populate: ['teamMembers', 'projectManager', 'organization'],
+  });
+  if (!proj || orgIdFromRelation(proj.organization) !== orgId) return null;
+  return proj;
+}
+
+/**
+ * Org members may create tasks when on the project team, or when creating a subtask on a parent
+ * they are assigned to. Admins/managers bypass this check in create().
+ * Mutates `data.projects` when inheriting from a parent task.
+ */
+async function memberMayCreateTask(strapi, orgId, userId, data) {
+  let pids = projectIdsFromProjectsInput(data.projects);
+
   for (const pid of pids) {
-    const proj = await strapi.entityService.findOne(PROJECT_UID, pid, {
-      populate: ['teamMembers', 'projectManager'],
-    });
-    if (proj && orgIdFromRelation(proj.organization) === orgId && userCanAccessProjectRow(proj, userId)) {
-      return true;
-    }
+    const proj = await loadProjectForAccessCheck(strapi, orgId, pid);
+    if (proj && userCanAccessProjectRow(proj, userId)) return true;
   }
-  return false;
+
+  const parentVal = data.parent;
+  if (parentVal == null || parentVal === '') return false;
+
+  const parentPk = await resolveEntityPkForRouteParam(
+    strapi,
+    UID,
+    String(typeof parentVal === 'object' ? parentVal.id ?? parentVal.documentId : parentVal)
+  );
+  if (parentPk == null) return false;
+
+  const parent = await strapi.entityService.findOne(UID, parentPk, {
+    populate: ['assignee', 'collaborators', 'organization', 'projects'],
+  });
+  if (!parent || orgIdFromRelation(parent.organization) !== orgId) return false;
+  if (!userIsTaskAssigneeOrCollaborator(parent, userId)) return false;
+
+  const parentPids = projectIdsFromEntity(parent);
+  if (parentPids.length && !pids.length) {
+    data.projects = { set: parentPids };
+    pids = parentPids;
+  }
+
+  for (const pid of pids) {
+    const proj = await loadProjectForAccessCheck(strapi, orgId, pid);
+    if (proj && userCanAccessProjectRow(proj, userId)) return true;
+  }
+
+  return pids.length > 0 || userIsTaskAssigneeOrCollaborator(parent, userId);
 }
 
 /** Member-created tasks: requested assignees stay pending until admin/manager approves. */
@@ -410,13 +456,10 @@ function addDays(d, n) {
   return x;
 }
 
-/** Tasks linked to projects where the user is PM or team member. */
-async function projectIdsForMember(strapi, orgId, userId, departmentId = null) {
-  let filters = {
-    organization: orgId,
-    $or: [{ projectManager: userId }, { teamMembers: userId }],
-  };
-  filters = mergeDepartmentScopeFilter(filters, departmentId);
+/** Project ids the current user may see tasks for (respects private flag + org role + department). */
+async function projectIdsVisibleToUser(strapi, ctx, orgId, userId) {
+  let filters = buildProjectListFiltersForUser(ctx, orgId, userId);
+  filters = mergeDepartmentScopeFilter(filters, ctx.state.departmentId);
   const rows = await strapi.entityService.findMany(PROJECT_UID, {
     filters,
     fields: ['id'],
@@ -431,7 +474,7 @@ function userIsTaskReporter(task, userId) {
   return reporterId != null && Number(reporterId) === Number(userId);
 }
 
-async function memberMayViewTask(strapi, orgId, userId, entry) {
+async function userMayViewTask(strapi, ctx, orgId, userId, entry) {
   if (!entry?.id || userId == null) return false;
   const row = await strapi.entityService.findOne(UID, entry.id, {
     populate: {
@@ -440,7 +483,7 @@ async function memberMayViewTask(strapi, orgId, userId, entry) {
       collaborators: true,
       pendingCollaborators: true,
       assignmentRequestedBy: true,
-      projects: { populate: ['teamMembers', 'projectManager'] },
+      projects: { populate: ['teamMembers', 'projectManager'], fields: ['id', 'isPrivate'] },
       organization: true,
     },
   });
@@ -457,7 +500,7 @@ async function memberMayViewTask(strapi, orgId, userId, entry) {
   const raw = row.projects;
   const plist = Array.isArray(raw) ? raw : raw ? [raw] : [];
   for (const p of plist) {
-    if (userCanAccessProjectRow(p, userId)) return true;
+    if (userCanViewProjectRow(ctx, p, userId)) return true;
   }
   return false;
 }
@@ -491,9 +534,9 @@ module.exports = createCoreController(UID, ({ strapi }) => ({
       if (extra.projects) extraFilters.projects = extra.projects;
     }
 
-    if (isPmOrgMemberRole(ctx) && ctx.state.user?.id) {
+    if (!isPmOrgAdminRole(ctx) && ctx.state.user?.id) {
       const uid = ctx.state.user.id;
-      const pids = await projectIdsForMember(strapi, ctx.state.orgId, uid, ctx.state.departmentId);
+      const pids = await projectIdsVisibleToUser(strapi, ctx, ctx.state.orgId, uid);
       const visOr = [{ assigner: uid }, { assignee: uid }, { collaborators: { id: uid } }];
       if (pids.length) visOr.push({ projects: { id: { $in: pids } } });
       const hasExtra = Object.keys(extraFilters).length > 0;
@@ -538,8 +581,8 @@ module.exports = createCoreController(UID, ({ strapi }) => ({
     if (orgIdFromRelation(entry.organization) !== ctx.state.orgId) {
       return ctx.forbidden('Access denied');
     }
-    if (isPmOrgMemberRole(ctx) && ctx.state.user?.id) {
-      const ok = await memberMayViewTask(strapi, ctx.state.orgId, ctx.state.user.id, entry);
+    if (!isPmOrgAdminRole(ctx) && ctx.state.user?.id) {
+      const ok = await userMayViewTask(strapi, ctx, ctx.state.orgId, ctx.state.user.id, entry);
       if (!ok) return ctx.forbidden('Access denied');
     }
     ctx.set('Cache-Control', 'no-store');
@@ -558,14 +601,11 @@ module.exports = createCoreController(UID, ({ strapi }) => ({
 
     const isMember = isPmOrgMemberRole(ctx);
     if (isMember) {
-      const ok = await memberMayCreateTaskOnProjects(
-        strapi,
-        ctx.state.orgId,
-        ctx.state.user.id,
-        data
-      );
+      const ok = await memberMayCreateTask(strapi, ctx.state.orgId, ctx.state.user.id, data);
       if (!ok) {
-        return ctx.forbidden('You can only create tasks on projects you belong to');
+        return ctx.forbidden(
+          'You can only create tasks on projects you belong to, or subtasks on tasks assigned to you'
+        );
       }
     }
 
@@ -672,17 +712,24 @@ module.exports = createCoreController(UID, ({ strapi }) => ({
     const data = typeof payload === 'object' ? { ...payload } : {};
     delete data.organization;
 
-    if (isPmOrgMemberRole(ctx)) {
-      const ok = await memberMayViewTask(strapi, ctx.state.orgId, ctx.state.user.id, existing);
+    if (!isPmOrgAdminRole(ctx) && ctx.state.user?.id) {
+      const ok = await userMayViewTask(strapi, ctx, ctx.state.orgId, ctx.state.user.id, existing);
       if (!ok) return ctx.forbidden('Access denied');
-      const allowed = {};
-      for (const k of MEMBER_TASK_UPDATE_FIELDS) {
-        if (Object.prototype.hasOwnProperty.call(data, k)) allowed[k] = data[k];
-      }
-      Object.keys(data).forEach((k) => delete data[k]);
-      Object.assign(data, allowed);
-      if (Object.keys(allowed).length === 0) {
-        return ctx.badRequest('Members may only update task status');
+    }
+    if (isPmOrgMemberRole(ctx) && ctx.state.user?.id) {
+      const uid = ctx.state.user.id;
+      const canFullEdit =
+        userIsTaskAssigneeOrCollaborator(existing, uid) || userIsTaskReporter(existing, uid);
+      if (!canFullEdit) {
+        const allowed = {};
+        for (const k of MEMBER_TASK_UPDATE_FIELDS) {
+          if (Object.prototype.hasOwnProperty.call(data, k)) allowed[k] = data[k];
+        }
+        Object.keys(data).forEach((k) => delete data[k]);
+        Object.assign(data, allowed);
+        if (Object.keys(allowed).length === 0) {
+          return ctx.badRequest('Members may only update task status');
+        }
       }
     }
 
@@ -896,21 +943,27 @@ module.exports = createCoreController(UID, ({ strapi }) => ({
   async delete(ctx) {
     if (!ctx.state.user) return ctx.unauthorized('Missing or invalid credentials');
     if (!ctx.state.orgId) return ctx.forbidden('No active organization');
-    const denied = requireModuleAccess(ctx, 'pm', 'tasks', 'manage');
+    const denied = requireModuleAccess(ctx, 'pm', 'tasks', 'write');
     if (denied) return denied;
 
     const pk = await resolveEntityPkForRouteParam(strapi, UID, ctx.params.id);
     if (pk == null) return ctx.notFound();
 
     const existing = await strapi.entityService.findOne(UID, pk, {
-      populate: ['organization', 'assignee', 'projects'],
+      populate: ['organization', 'assignee', 'assigner', 'projects'],
     });
     if (!existing) return ctx.notFound();
     if (orgIdFromRelation(existing.organization) !== ctx.state.orgId) {
       return ctx.forbidden('Access denied');
     }
-    if (isPmOrgMemberRole(ctx)) {
-      return ctx.forbidden('Members cannot delete tasks');
+    if (!isPmOrgAdminRole(ctx) && ctx.state.user?.id) {
+      const ok = await userMayViewTask(strapi, ctx, ctx.state.orgId, ctx.state.user.id, existing);
+      if (!ok) return ctx.forbidden('Access denied');
+    }
+    if (isPmOrgMemberRole(ctx) && ctx.state.user?.id) {
+      if (!userIsTaskReporter(existing, ctx.state.user.id)) {
+        return ctx.forbidden('Members may only delete tasks they created');
+      }
     }
 
     try {
@@ -944,8 +997,8 @@ module.exports = createCoreController(UID, ({ strapi }) => ({
     const terminal = ['COMPLETED', 'CANCELLED'];
 
     const projectTasksPromise =
-      isPmOrgMemberRole(ctx) && userId
-        ? projectIdsForMember(strapi, orgId, userId, ctx.state.departmentId).then((pids) => {
+      !isPmOrgAdminRole(ctx) && userId
+        ? projectIdsVisibleToUser(strapi, ctx, orgId, userId).then((pids) => {
             let taskFilters = {
               organization: orgId,
               projects: { id: { $in: pids } },

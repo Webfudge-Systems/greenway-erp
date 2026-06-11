@@ -27,6 +27,8 @@ export {
   SidebarTrialUpsell,
   PwaInstallPrompt,
   WorkspaceHeader,
+  WorkspaceBackButton,
+  workspaceBackButtonClassName,
   TableCellCreated,
   TableCellDateOnly,
   TableCellOwner,

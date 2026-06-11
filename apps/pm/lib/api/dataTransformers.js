@@ -162,6 +162,7 @@ export function transformProject(strapiProject) {
     clientAccountId: clientAccount?.id || clientAttrs.id || null,
     clientName: clientAttrs.companyName || clientAttrs.name || clientAttrs.title || '',
     icon: p.icon || (p.name ? p.name.charAt(0).toUpperCase() : 'P'),
+    isPrivate: p.isPrivate ?? false,
     createdAt: p.createdAt || null,
     updatedAt: p.updatedAt || null,
   };

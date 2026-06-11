@@ -31,6 +31,7 @@ const {
   transferUserAssignments,
   removeUserFromOrgStructure,
 } = require('../../../utils/user-assignment-transfer');
+const { canChangeUserPassword } = require('../../../utils/platform-admin');
 
 function getRolesAdminError(ctx, orgIdFromParams) {
   if (!ctx.state.user) return 'Missing or invalid credentials';
@@ -367,6 +368,7 @@ module.exports = createCoreController('api::organization.organization', ({ strap
           firstName: userData?.firstName || userData?.firstname || '',
           lastName: userData?.lastName || userData?.lastname || '',
           blocked: Boolean(userData?.blocked),
+          isPlatformAdmin: Boolean(userData?.isPlatformAdmin),
           confirmed: userData?.confirmed !== false,
           createdAt: userData?.createdAt || null,
           updatedAt: userData?.updatedAt || null,
@@ -596,6 +598,13 @@ module.exports = createCoreController('api::organization.organization', ({ strap
         if (password != null && String(password).trim() !== '') {
           if (!canManageOrganizationSecurity(ctx)) {
             return ctx.forbidden('Only organization admins can change user passwords');
+          }
+
+          const targetUserRecord = await strapi.query('plugin::users-permissions.user').findOne({
+            where: { id: targetUserId },
+          });
+          if (!canChangeUserPassword(user, targetUserRecord)) {
+            return ctx.forbidden('Only the platform administrator can change their own password');
           }
 
           const org = await strapi.entityService.findOne('api::organization.organization', id, {

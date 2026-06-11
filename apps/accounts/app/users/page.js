@@ -19,6 +19,7 @@ import {
 import AccountsPageHeader from '../../components/AccountsPageHeader'
 import DepartmentPillMultiSelect from '../../components/DepartmentPillMultiSelect'
 import TransferUserSelect from '../../components/TransferUserSelect'
+import { authService } from '@greenways/auth'
 import { isOrganizationAdmin } from '../../lib/accountsAccess'
 import { departmentsService, organizationService, rolesService, usersService } from '../../lib/api'
 
@@ -89,6 +90,12 @@ function parseRoleOption(value) {
   return { roleId: null, roleCode: raw || 'member' }
 }
 
+function canChangeUserPassword(targetUser) {
+  if (!targetUser?.isPlatformAdmin) return true
+  const currentUser = authService.getStoredUser()
+  return currentUser?.id != null && String(currentUser.id) === String(targetUser.id)
+}
+
 function isUnauthorizedError(error) {
   const message = String(error?.message || '').toLowerCase()
   return (
@@ -140,6 +147,7 @@ export default function UsersPage() {
   const [editTransferToUserId, setEditTransferToUserId] = useState('')
   const [passwordMinLength, setPasswordMinLength] = useState(8)
   const canEditPassword = isOrganizationAdmin()
+  const editCanChangePassword = editUser ? canChangeUserPassword(editUser) : false
   const canManageUsers = isOrganizationAdmin()
   const editRequiresTransfer = useMemo(() => {
     if (!editUser) return false
@@ -425,6 +433,10 @@ export default function UsersPage() {
       return
     }
     if (editChangePassword) {
+      if (!canChangeUserPassword(editUser)) {
+        setEditError('Only the platform administrator can change their own password.')
+        return
+      }
       const nextPassword = editPassword.trim()
       if (!nextPassword) {
         setEditError('Password is required when changing password.')
@@ -879,7 +891,7 @@ export default function UsersPage() {
               placeholder="user@company.com"
             />
           </div>
-          {canEditPassword ? (
+          {canEditPassword && editCanChangePassword ? (
             <>
               <label className="flex items-center gap-2 text-sm text-gray-700">
                 <input
@@ -923,6 +935,10 @@ export default function UsersPage() {
                 </div>
               ) : null}
             </>
+          ) : editUser?.isPlatformAdmin ? (
+            <p className="text-xs text-gray-500">
+              Platform administrator passwords can only be changed by the platform administrator themselves.
+            </p>
           ) : null}
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-gray-700">Role</label>

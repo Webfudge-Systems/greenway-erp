@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronRight, LayoutGrid, LogOut, Plus, X } from 'lucide-react'
+import { LayoutGrid, LogOut, PanelLeftClose, Plus, X } from 'lucide-react'
 import { useAuth } from '@greenways/auth'
 import { ORG_MANAGER_SITE } from '../lib/site'
 
@@ -39,8 +39,12 @@ export default function PlatformSidebar({
         showExpanded ? 'w-64' : 'w-16'
       } h-full min-h-0 bg-white border border-gray-200/90 flex flex-col shadow-[0_8px_24px_rgba(15,23,42,0.08)] overflow-hidden transition-[width] duration-300`}
     >
-      <div className="shrink-0 p-4 border-b border-gray-100">
-        <div className="flex items-center justify-between gap-2">
+      <div className="shrink-0 px-4 pt-4 pb-3">
+        <div
+          className={`flex gap-2 ${
+            showExpanded ? 'items-center justify-between' : 'flex-col items-center'
+          }`}
+        >
           {!showExpanded ? (
             <Link href="/organizations" className="flex shrink-0" aria-label={`${ORG_MANAGER_SITE.brandName} home`} onClick={handleNavClick}>
               <Image
@@ -68,10 +72,12 @@ export default function PlatformSidebar({
                 priority
               />
               <div className="min-w-0">
-                <span className="block font-bold text-lg tracking-tight bg-gradient-to-r from-orange-700 via-orange-500 to-amber-400 bg-clip-text text-transparent truncate">
+                <span className="block truncate text-lg font-bold tracking-tight bg-gradient-to-r from-orange-700 via-orange-500 to-amber-400 bg-clip-text text-transparent">
                   {ORG_MANAGER_SITE.brandName}
                 </span>
-                <p className="text-xs text-gray-500 mt-0.5 truncate">{ORG_MANAGER_SITE.name}</p>
+                <span className="mt-0.5 block truncate text-[10px] text-gray-500">
+                  {ORG_MANAGER_SITE.productName}
+                </span>
               </div>
             </Link>
           )}
@@ -79,7 +85,7 @@ export default function PlatformSidebar({
             <button
               type="button"
               onClick={onMobileClose}
-              className="p-2 rounded-lg hover:bg-gray-50 transition-colors shrink-0"
+              className="shrink-0 rounded-lg p-2 transition-colors hover:bg-gray-50"
               aria-label="Close navigation menu"
             >
               <X className="w-5 h-5" />
@@ -88,13 +94,19 @@ export default function PlatformSidebar({
             <button
               type="button"
               onClick={onToggle}
-              className="p-2 rounded-lg hover:bg-gray-50 transition-colors shrink-0"
-              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              className="shrink-0 rounded-lg p-2 transition-colors hover:bg-gray-50"
+              aria-label="Hide sidebar"
             >
-              {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+              <PanelLeftClose className="w-5 h-5 text-brand-foreground" strokeWidth={1.75} />
             </button>
           )}
         </div>
+        {showExpanded ? (
+          <div
+            className="mt-3 h-px w-full bg-gradient-to-r from-transparent via-orange-400/50 to-transparent"
+            aria-hidden
+          />
+        ) : null}
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2">

@@ -20,10 +20,16 @@ function PmWorkspaceShell({ children }) {
   return (
     <WorkspaceLayoutContent
       sidebar={PMSidebar}
-      appName={PM_SITE.brandName}
+      sidebarBehavior="hide"
+      sidebarBranding={{
+        logoPath: PM_SITE.logoPath,
+        brandName: PM_SITE.productName,
+        homeHref: '/',
+      }}
+      appName={PM_SITE.productName}
       pwaStorageKey="pm"
       mobileNav
-      mobileNavTitle={PM_SITE.brandName}
+      mobileNavTitle={PM_SITE.productName}
       canView={canView}
       deniedTitle="Access denied"
       deniedDescription="Your current role does not have access to this Project Management module."

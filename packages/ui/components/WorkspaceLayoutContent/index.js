@@ -26,6 +26,8 @@ import { AccessDeniedPanel } from '../AccessDeniedPanel'
  *   extras?: React.ReactNode,
  *   mobileNav?: boolean,
  *   mobileNavTitle?: string,
+ *   sidebarBehavior?: 'collapse' | 'hide',
+ *   sidebarBranding?: { logoPath: string, brandName?: string, homeHref?: string },
  *   children: React.ReactNode,
  * }} props
  */
@@ -42,10 +44,18 @@ export function WorkspaceLayoutContent({
   extras,
   mobileNav = false,
   mobileNavTitle,
+  sidebarBehavior = 'collapse',
+  sidebarBranding,
   children,
 }) {
   return (
-    <AppShell sidebar={sidebar} mobileNav={mobileNav} mobileNavTitle={mobileNavTitle}>
+    <AppShell
+      sidebar={sidebar}
+      mobileNav={mobileNav}
+      mobileNavTitle={mobileNavTitle}
+      sidebarBehavior={sidebarBehavior}
+      sidebarBranding={sidebarBranding}
+    >
       {showPwa && appName && pwaStorageKey && (
         <PwaInstallPrompt appName={appName} storageKey={pwaStorageKey} />
       )}

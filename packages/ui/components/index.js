@@ -25,6 +25,7 @@ export { FormSectionCard } from './FormSectionCard';
 export { SidebarTrialUpsell } from './SidebarTrialUpsell';
 export { PwaInstallPrompt } from './PwaInstallPrompt';
 export { WorkspaceHeader } from './WorkspaceHeader';
+export { WorkspaceBackButton, workspaceBackButtonClassName } from './WorkspaceBackButton';
 export {
   TableCellCreated,
   TableCellDateOnly,

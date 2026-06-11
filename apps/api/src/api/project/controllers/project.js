@@ -21,7 +21,9 @@ const {
   isPmOrgAdminRole,
   isPmOrgManagerRole,
   isPmOrgMemberRole,
+  buildProjectListFiltersForUser,
   userCanAccessProjectRow,
+  userCanViewProjectRow,
 } = require('../../../utils/rbac');
 const { mergeDepartmentScopeFilter } = require('../../../utils/department-context');
 
@@ -107,12 +109,8 @@ module.exports = createCoreController(UID, ({ strapi }) => ({
       defaultSort: 'updatedAt:desc',
     });
 
-    let filters = { organization: ctx.state.orgId };
+    let filters = buildProjectListFiltersForUser(ctx, ctx.state.orgId, ctx.state.user?.id);
     filters = mergeDepartmentScopeFilter(filters, ctx.state.departmentId);
-    if (isPmOrgMemberRole(ctx) && ctx.state.user?.id) {
-      const uid = ctx.state.user.id;
-      filters.$or = [{ projectManager: uid }, { teamMembers: uid }];
-    }
     const extra = query.filters;
     if (extra && typeof extra === 'object' && !Array.isArray(extra)) {
       if (extra.clientAccount) filters.clientAccount = extra.clientAccount;
@@ -151,11 +149,12 @@ module.exports = createCoreController(UID, ({ strapi }) => ({
     if (orgIdFromRelation(entry.organization) !== ctx.state.orgId) {
       return ctx.forbidden('Access denied');
     }
-    if (isPmOrgMemberRole(ctx) && ctx.state.user?.id) {
+    if (!isPmOrgAdminRole(ctx) && ctx.state.user?.id) {
       const gate = await strapi.entityService.findOne(UID, pk, {
         populate: ['teamMembers', 'projectManager'],
+        fields: ['isPrivate'],
       });
-      if (!userCanAccessProjectRow(gate, ctx.state.user.id)) {
+      if (!userCanViewProjectRow(ctx, gate, ctx.state.user.id)) {
         return ctx.forbidden('Access denied');
       }
     }

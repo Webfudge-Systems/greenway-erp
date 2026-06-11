@@ -42,6 +42,7 @@ import {
 import taskService from '../lib/api/taskService';
 import taskCommentService from '../lib/api/taskCommentService';
 import { filterMajorTasks } from '../lib/taskListUtils';
+import { canDeleteTaskInPm, canEditTaskInPm } from '../lib/pmOrgRoles';
 import { usePmTableSort } from '../hooks/usePmTableSort';
 import { TableSortDropdown as PmTableSortDropdown } from '@greenways/ui';
 
@@ -150,10 +151,13 @@ export default function ProjectTasksPanel({
   onOpenCreateSubtask,
   onEditTask,
   onDeleteTask,
-  /** Org Member role: only status updates; hide task CRUD. */
+  /** @deprecated Use currentUserId + canEditTaskInPm per row. Kept for promote/assignment flows. */
   memberScopedTasks = false,
+  currentUserId = null,
   /** Project team member may create tasks (including org Members on the team). */
   canCreateProjectTasks = true,
+  /** Optional `(taskRow) => boolean` — e.g. parent-task assignee may add subtasks. */
+  canAddSubtaskOnTask,
   /** Org admin/manager may approve pending member assignments. */
   canApproveAssignments = false,
 }) {
@@ -206,7 +210,7 @@ export default function ProjectTasksPanel({
   const updateTask = useCallback(
     async (task, patch) => {
       let next = patch;
-      if (memberScopedTasks) {
+      if (!canEditTaskInPm(task, currentUserId)) {
         next = {};
         if (patch.status !== undefined) next.status = patch.status;
         if (Object.keys(next).length === 0) return;
@@ -221,7 +225,7 @@ export default function ProjectTasksPanel({
         setSavingId(null);
       }
     },
-    [memberScopedTasks, onRefresh]
+    [currentUserId, onRefresh]
   );
 
   const copyTaskLink = useCallback(async (task) => {
@@ -477,7 +481,7 @@ export default function ProjectTasksPanel({
               value={row.priority}
               options={PRIORITY_OPTIONS}
               onChange={(priority) => updateTask(row, { priority })}
-              disabled={memberScopedTasks || savingId === row.id}
+              disabled={!canEditTaskInPm(row, currentUserId) || savingId === row.id}
               className="border-orange-200 bg-orange-50 py-1.5 text-xs font-semibold uppercase tracking-wide text-orange-800"
               containerClassName="min-w-[130px]"
               placeholder="Priority"
@@ -528,7 +532,7 @@ export default function ProjectTasksPanel({
               assignees={row.assignees}
               users={users}
               onChange={(assigneeUserIds) => updateTask(row, { assigneeUserIds })}
-              disabled={memberScopedTasks || row.assignmentPending || savingId === row.id}
+              disabled={!canEditTaskInPm(row, currentUserId) || row.assignmentPending || savingId === row.id}
               compact
             />
             {row.assignmentPending && canApproveAssignments ? (
@@ -582,18 +586,16 @@ export default function ProjectTasksPanel({
               triggerClassName="inline-flex h-9 w-9 items-center justify-center rounded-md p-2 text-teal-600 transition hover:bg-teal-50"
               items={[
                 { label: 'View', icon: Eye, onClick: () => router.push(`/tasks/${row.id}`) },
-                ...(memberScopedTasks
-                  ? []
-                  : [
-                      { label: 'Edit', icon: Edit3, onClick: () => onEditTask?.(row) },
-                    ]),
+                ...(canEditTaskInPm(row, currentUserId)
+                  ? [{ label: 'Edit', icon: Edit3, onClick: () => onEditTask?.(row) }]
+                  : []),
                 { label: 'Copy link', icon: Copy, onClick: () => copyTaskLink(row) },
-                ...(memberScopedTasks
-                  ? []
-                  : [{ label: 'Delete', icon: Trash2, danger: true, onClick: () => onDeleteTask?.(row) }]),
+                ...(canDeleteTaskInPm(row, currentUserId)
+                  ? [{ label: 'Delete', icon: Trash2, danger: true, onClick: () => onDeleteTask?.(row) }]
+                  : []),
               ]}
             />
-            {!memberScopedTasks ? (
+            {canEditTaskInPm(row, currentUserId) ? (
             <Button
               variant="ghost"
               size="sm"
@@ -619,7 +621,7 @@ export default function ProjectTasksPanel({
             >
               <Link2 className="h-4 w-4" />
             </Button>
-            {!memberScopedTasks ? (
+            {canDeleteTaskInPm(row, currentUserId) ? (
             <Button
               variant="ghost"
               size="sm"
@@ -641,7 +643,7 @@ export default function ProjectTasksPanel({
       router,
       users,
       savingId,
-      memberScopedTasks,
+      currentUserId,
       canApproveAssignments,
       handleApproveAssignment,
       handleRejectAssignment,
@@ -737,13 +739,14 @@ export default function ProjectTasksPanel({
                   colSpan={sortableTaskColumns.length}
                   users={users}
                   savingId={savingId}
-                  memberScopedTasks={memberScopedTasks}
+                  currentUserId={currentUserId}
                   onUpdateTask={updateTask}
                   onOpenTask={(subtask) => router.push(`/tasks/${subtask.id}`)}
                   onEditTask={(subtask) => onEditTask?.(subtask)}
                   onCopyTaskLink={copyTaskLink}
                   onDeleteTask={(subtask) => onDeleteTask?.(subtask)}
                   onAddSubtask={(r) => onOpenCreateSubtask?.(r)}
+                  canAddSubtaskOnTask={canAddSubtaskOnTask}
                 />
               )}
             />

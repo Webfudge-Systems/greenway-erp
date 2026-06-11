@@ -67,6 +67,7 @@ import {
   canApproveTaskAssignmentsInPm,
   canCreateTaskInProject,
   canEditProjectInPm,
+  canCreateSubtaskOnTask,
   getPmOrgRoleKind,
 } from '../../../lib/pmOrgRoles';
 import { mergeTasksById } from '../../../lib/taskListUtils';
@@ -986,7 +987,9 @@ export default function ProjectDetailPage() {
           onEditTask={(task) => setTaskModal({ open: true, task, parentContext: null })}
           onDeleteTask={(task) => setDeleteTaskModal({ open: true, task })}
           memberScopedTasks={memberScopedTasks}
+          currentUserId={currentUserId}
           canCreateProjectTasks={canCreateProjectTasks}
+          canAddSubtaskOnTask={(row) => canCreateSubtaskOnTask(row, currentUserId)}
           canApproveAssignments={canApproveAssignments}
         />
       ) : null}

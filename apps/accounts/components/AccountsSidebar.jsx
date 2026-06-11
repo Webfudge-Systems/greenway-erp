@@ -15,8 +15,7 @@ import {
   ClipboardList,
   Settings,
   Grid3X3,
-  ChevronLeft,
-  ChevronRight,
+  PanelLeftClose,
 } from 'lucide-react'
 import { ACCOUNTS_SITE } from '../lib/site'
 
@@ -56,13 +55,17 @@ export default function AccountsSidebar({ collapsed = false, onToggle }) {
         collapsed ? 'w-16' : 'w-64'
       } h-full min-h-0 bg-white border border-gray-200/90 flex flex-col shadow-[0_8px_24px_rgba(15,23,42,0.08)] overflow-hidden transition-[width] duration-300`}
     >
-      <div className="shrink-0 p-4 border-b border-white/20">
-        <div className="flex items-center justify-between gap-2">
+      <div className="shrink-0 px-4 pt-4 pb-3">
+        <div
+          className={`flex gap-2 ${
+            collapsed ? 'flex-col items-center' : 'items-center justify-between'
+          }`}
+        >
           {collapsed ? (
-            <Link href="/" className="flex shrink-0" aria-label={`${ACCOUNTS_SITE.brandName} home`}>
+            <Link href="/" className="flex shrink-0" aria-label={`${ACCOUNTS_SITE.productName} home`}>
               <Image
                 src={ACCOUNTS_SITE.logoPath}
-                alt={ACCOUNTS_SITE.brandName}
+                alt={ACCOUNTS_SITE.productName}
                 width={32}
                 height={32}
                 className="h-8 w-8 object-contain"
@@ -73,30 +76,36 @@ export default function AccountsSidebar({ collapsed = false, onToggle }) {
             <Link
               href="/"
               className="flex min-w-0 flex-1 items-center gap-2.5"
-              aria-label={`${ACCOUNTS_SITE.brandName} home`}
+              aria-label={`${ACCOUNTS_SITE.productName} home`}
             >
               <Image
                 src={ACCOUNTS_SITE.logoPath}
-                alt={ACCOUNTS_SITE.brandName}
+                alt={ACCOUNTS_SITE.productName}
                 width={44}
                 height={44}
                 className="h-11 w-11 shrink-0 object-contain"
                 priority
               />
-              <span className="min-w-0 font-bold text-xl tracking-tight bg-gradient-to-r from-orange-700 via-orange-500 to-amber-400 bg-clip-text text-transparent">
-                {ACCOUNTS_SITE.brandName}
+              <span className="min-w-0 font-bold text-xl tracking-tight bg-gradient-to-r from-orange-700 via-orange-500 to-amber-400 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(249,115,22,0.35)]">
+                {ACCOUNTS_SITE.productName}
               </span>
             </Link>
           )}
           <button
             type="button"
             onClick={onToggle}
-            className="p-2 rounded-lg hover:bg-gray-50 transition-colors"
-            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            className="shrink-0 rounded-lg p-2 transition-colors hover:bg-gray-50"
+            aria-label="Hide sidebar"
           >
-            {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+            <PanelLeftClose className="w-5 h-5 text-brand-foreground" strokeWidth={1.75} />
           </button>
         </div>
+        {!collapsed ? (
+          <div
+            className="mt-3 h-px w-full bg-gradient-to-r from-transparent via-orange-400/50 to-transparent"
+            aria-hidden
+          />
+        ) : null}
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2">
