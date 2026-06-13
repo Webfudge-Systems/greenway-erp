@@ -1,0 +1,62 @@
+{
+  "kind": "collectionType",
+  "collectionName": "entity_attachments",
+  "info": {
+    "singularName": "entity-attachment",
+    "pluralName": "entity-attachments",
+    "displayName": "Entity Attachment",
+    "description": "Files linked to CRM/PM entities (chat or files tab)"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "subjectType": {
+      "type": "enumeration",
+      "enum": [
+        "contact",
+        "deal",
+        "lead_company",
+        "client_account",
+        "task",
+        "project",
+        "meeting"
+      ],
+      "required": true
+    },
+    "subjectId": {
+      "type": "integer",
+      "required": true
+    },
+    "source": {
+      "type": "enumeration",
+      "enum": ["files_tab", "chat"],
+      "default": "files_tab"
+    },
+    "file": {
+      "type": "media",
+      "multiple": false,
+      "required": true,
+      "allowedTypes": ["images", "files", "videos", "audios"]
+    },
+    "fileName": {
+      "type": "string"
+    },
+    "uploadedBy": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "organization": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::organization.organization"
+    },
+    "crmActivity": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::crm-activity.crm-activity"
+    }
+  }
+}

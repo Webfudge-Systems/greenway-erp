@@ -12,6 +12,7 @@ import {
   Card,
   EmptyState,
   EntityActivityPanel,
+  EntityFilesPanel,
   KPICard,
   LoadingSpinner,
   Modal,
@@ -68,6 +69,7 @@ import {
   canEditTaskInPm,
 } from '../../../lib/pmOrgRoles';
 import { fetchChatMentionUsers } from '../../../lib/api/chatMentionUsers';
+import { entityChatMediaProps, entityFilesPanelProps } from '../../../lib/entityMedia';
 
 const DETAIL_TABS = [
   { key: 'overview', label: 'Overview' },
@@ -190,6 +192,7 @@ export default function TaskDetailPage() {
   const [subtaskModalOpen, setSubtaskModalOpen] = useState(false);
   const [subtaskEditModal, setSubtaskEditModal] = useState({ open: false, task: null });
   const [subtaskDeleteModal, setSubtaskDeleteModal] = useState({ open: false, task: null });
+  const [fileCount, setFileCount] = useState(0);
 
   const loadTask = useCallback(async () => {
     if (!id) return;
@@ -318,7 +321,7 @@ export default function TaskDetailPage() {
         ...tab,
         badge:
           tab.key === 'files'
-            ? 0
+            ? fileCount || undefined
             : tab.key === 'activity'
               ? activityCount || undefined
               : tab.key === 'comments'
@@ -327,7 +330,7 @@ export default function TaskDetailPage() {
                   ? (task?.subtaskCount ?? task?.subtasks?.length) || undefined
                   : undefined,
       })),
-    [activityCount, commentCount, task?.subtaskCount, task?.subtasks]
+    [activityCount, commentCount, fileCount, task?.subtaskCount, task?.subtasks]
   );
 
   const handleAddTaskComment = useCallback(
@@ -1011,6 +1014,7 @@ export default function TaskDetailPage() {
             className="w-full"
             minHeightPx={440}
             maxHeightPx={680}
+            {...entityChatMediaProps}
           />
         </section>
         </div>
@@ -1073,6 +1077,7 @@ export default function TaskDetailPage() {
             className="w-full"
             minHeightPx={560}
             maxHeightPx={800}
+            {...entityChatMediaProps}
           />
         </div>
       ) : null}
@@ -1124,19 +1129,22 @@ export default function TaskDetailPage() {
               className="w-full"
               minHeightPx={560}
               maxHeightPx={800}
+              {...entityChatMediaProps}
             />
           </div>
         </div>
       ) : null}
 
       {activeTab === 'files' ? (
-        <Card variant="elevated" className="rounded-xl">
-          <EmptyState
-            icon={Paperclip}
-            title="No attachments"
-            description="The attachments section is a frontend-first CRM parity surface until file relations are added."
-          />
-        </Card>
+        <EntityFilesPanel
+          subjectType="task"
+          subjectId={task.id}
+          canEdit={canEditCurrentTask}
+          title="Task files"
+          emptyDescription="Upload briefs, designs, or other files for this task."
+          onRowsChange={(rows) => setFileCount(rows?.length ?? 0)}
+          {...entityFilesPanelProps}
+        />
       ) : null}
 
       {canEditCurrentTask ? (

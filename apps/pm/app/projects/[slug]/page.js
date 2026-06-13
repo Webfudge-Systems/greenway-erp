@@ -12,6 +12,7 @@ import {
   Card,
   EmptyState,
   EntityActivityPanel,
+  EntityFilesPanel,
   Input,
   KPICard,
   LoadingSpinner,
@@ -71,6 +72,7 @@ import {
   getPmOrgRoleKind,
 } from '../../../lib/pmOrgRoles';
 import { mergeTasksById } from '../../../lib/taskListUtils';
+import { entityChatMediaProps, entityFilesPanelProps } from '../../../lib/entityMedia';
 
 const DETAIL_TABS = [
   { key: 'overview', label: 'Overview' },
@@ -196,6 +198,7 @@ export default function ProjectDetailPage() {
     [project, currentUserId],
   );
   const [tasks, setTasks] = useState([]);
+  const [fileCount, setFileCount] = useState(0);
   const [users, setUsers] = useState([]);
   const [clientOptions, setClientOptions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -361,12 +364,12 @@ export default function ProjectDetailPage() {
           tab.key === 'tasks'
             ? tasks.length
             : tab.key === 'files'
-              ? 0
+              ? fileCount || undefined
               : tab.key === 'activity'
                 ? activityCount || undefined
                 : undefined,
       })),
-    [tasks.length, activityCount]
+    [tasks.length, activityCount, fileCount]
   );
 
   const handleAddProjectComment = useCallback(
@@ -1033,19 +1036,22 @@ export default function ProjectDetailPage() {
               mentionUsers={projectTaskUsers}
               fetchMentionUsers={fetchChatMentionUsers}
               chatFooterBadgeText="Messages are saved on this project for your team."
+              {...entityChatMediaProps}
             />
           </div>
         </div>
       ) : null}
 
       {activeTab === 'files' ? (
-        <Card variant="elevated" className="rounded-xl">
-          <EmptyState
-            icon={FileText}
-            title="No files attached"
-            description="The files tab is ready for the CRM-style attachments experience once backend file relations are added."
-          />
-        </Card>
+        <EntityFilesPanel
+          subjectType="project"
+          subjectId={project.id}
+          canEdit={canEditThisProject}
+          title="Project files"
+          emptyDescription="Upload specs, designs, contracts, or other files for this project."
+          onRowsChange={(rows) => setFileCount(rows?.length ?? 0)}
+          {...entityFilesPanelProps}
+        />
       ) : null}
 
       <QuickCreateTaskModal

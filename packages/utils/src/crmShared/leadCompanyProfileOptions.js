@@ -8,6 +8,9 @@
 
 export const INDUSTRY_OTHER_VALUE = 'other';
 
+/** Browser cache key for custom industries added via forms (merged into dropdowns). */
+export const CUSTOM_INDUSTRIES_STORAGE_KEY = 'greenways_custom_industries';
+
 export const industryOptions = [
   { value: 'technology',              label: 'Technology' },
   { value: 'software-saas',           label: 'Software & SaaS' },
@@ -92,6 +95,79 @@ export function canonicalIndustryValue(stored) {
       o.label.toLowerCase() === v.toLowerCase()
   );
   return hit ? hit.value : v;
+}
+
+const PRESET_VALUE_SET = new Set(industryOptions.map((o) => o.value));
+
+export function isPresetIndustryValue(value) {
+  const v = (value || '').trim();
+  return v !== '' && PRESET_VALUE_SET.has(v);
+}
+
+export function industryDisplayLabel(stored) {
+  const raw = (stored || '').trim();
+  if (!raw) return '';
+  const canonical = canonicalIndustryValue(raw);
+  const preset = industryOptions.find((o) => o.value === canonical);
+  if (preset) return preset.label;
+  return raw;
+}
+
+/** Preset list + custom values from accounts/leads/cache, sorted; "Other" stays last. */
+export function buildIndustrySelectOptions(extraStored = []) {
+  const customs = [];
+  const seen = new Set();
+
+  const addCustom = (raw) => {
+    const v = (raw || '').trim();
+    if (!v || v.toLowerCase() === 'other') return;
+    const canonical = canonicalIndustryValue(v);
+    if (PRESET_VALUE_SET.has(canonical)) return;
+    const value = v;
+    const label = industryDisplayLabel(v);
+    const key = value.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    customs.push({ value, label });
+  };
+
+  for (const raw of extraStored) addCustom(raw);
+
+  customs.sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
+
+  const presets = industryOptions.filter((o) => o.value !== INDUSTRY_OTHER_VALUE);
+  const other = industryOptions.find((o) => o.value === INDUSTRY_OTHER_VALUE);
+  return [...presets, ...customs, ...(other ? [other] : [])];
+}
+
+export function readCachedCustomIndustries() {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(CUSTOM_INDUSTRIES_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((v) => typeof v === 'string' && v.trim());
+  } catch {
+    return [];
+  }
+}
+
+export function rememberCustomIndustry(label) {
+  const v = (label || '').trim();
+  if (!v || isPresetIndustryValue(v) || v.toLowerCase() === 'other') return;
+  if (typeof window === 'undefined') return;
+  const existing = readCachedCustomIndustries();
+  const key = v.toLowerCase();
+  if (existing.some((e) => e.trim().toLowerCase() === key)) return;
+  try {
+    window.localStorage.setItem(
+      CUSTOM_INDUSTRIES_STORAGE_KEY,
+      JSON.stringify([v, ...existing].slice(0, 50))
+    );
+  } catch {
+    /* ignore quota / private mode */
+  }
 }
 
 /** Split stored industry into select value + optional custom text when "Other" was used. */

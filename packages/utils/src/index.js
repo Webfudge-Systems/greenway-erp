@@ -15,3 +15,13 @@ export {
 } from './workspace-calendar';
 
 export { listCacheBust, strapiRowId, paginateStrapiList } from './api/paginateStrapiList';
+
+export {
+  pickUploadedFile,
+  normalizeUploadedFile,
+  resolveMediaUrl,
+  isImageMime,
+  formatFileSize,
+  uploadFileToStrapi,
+  uploadFilesToStrapi,
+} from './media/upload';
