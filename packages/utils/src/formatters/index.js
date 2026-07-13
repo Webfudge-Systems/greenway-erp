@@ -9,3 +9,14 @@ export {
   formatDuration,
   formatCurrencyCompact,
 } from './format';
+
+export {
+  isCalendarDateValue,
+  parseDisplayDate,
+  startOfLocalDay,
+  calendarDayDiff,
+  isCalendarDateBefore,
+  formatCalendarTableDate,
+  formatCalendarRelativeTime,
+  isTaskDueOverdue,
+} from './calendarDate';

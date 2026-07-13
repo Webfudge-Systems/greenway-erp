@@ -10,8 +10,10 @@ import {
   Select,
   Table,
   TableCellCreated,
+  TableCellTaskStatusSelect,
   TableCellTitleSubtitle,
   TableEmptyBelow,
+  PM_TASK_STATUS_OPTIONS,
   TableRowActionMenuPortal,
   TableSkeleton,
   TabsWithActions,
@@ -34,11 +36,7 @@ import {
 import PMRowActions from './PMRowActions';
 import { TaskSubtasksAfterRow, TaskSubtasksToggleButton } from './TaskSubtasksTableExtras';
 import TaskAssigneesPicker from './TaskAssigneesPicker';
-import {
-  getTaskStatusMeta,
-  PRIORITY_OPTIONS,
-  TASK_STATUS_OPTIONS,
-} from './PMStatusBadge';
+import { pmTableSelectFillProps, PRIORITY_OPTIONS } from './PMStatusBadge';
 import taskService from '../lib/api/taskService';
 import taskCommentService from '../lib/api/taskCommentService';
 import { filterMajorTasks } from '../lib/taskListUtils';
@@ -57,17 +55,6 @@ const STATUS_TABS = [
   { id: 'COMPLETED', label: 'Completed' },
   { id: 'OVERDUE', label: 'Overdue' },
 ];
-
-const STATUS_SELECT_VARIANT_CLASS = {
-  primary: 'border-blue-200 bg-blue-50 text-blue-800',
-  warning: 'border-amber-200 bg-amber-50 text-amber-800',
-  orange: 'border-orange-200 bg-orange-50 text-orange-800',
-  cyan: 'border-cyan-200 bg-cyan-50 text-cyan-800',
-  purple: 'border-purple-200 bg-purple-50 text-purple-800',
-  success: 'border-green-200 bg-green-50 text-green-800',
-  danger: 'border-red-200 bg-red-50 text-red-800',
-  default: 'border-gray-200 bg-gray-50 text-gray-800',
-};
 
 function assignerStrapiShape(row, users) {
   const u = users.find((x) => Number(x.id) === Number(row.assignerId));
@@ -164,6 +151,7 @@ export default function ProjectTasksPanel({
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [savingId, setSavingId] = useState(null);
   const [expandedSubtaskParents, setExpandedSubtaskParents] = useState(() => new Set());
   const [commentComposerMenu, setCommentComposerMenu] = useState(null);
@@ -176,6 +164,11 @@ export default function ProjectTasksPanel({
   const [sortPickerOpen, setSortPickerOpen] = useState(false);
   const [tablePage, setTablePage] = useState(1);
   const toolbarRef = useRef(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchQuery(searchQuery), 200);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const handleApproveAssignment = useCallback(
     async (task) => {
@@ -290,8 +283,8 @@ export default function ProjectTasksPanel({
       if (activeTab === 'OVERDUE') list = list.filter(isTaskOverdue);
       else list = list.filter((task) => task.strapiStatus === activeTab);
     }
-    if (searchQuery.trim()) {
-      const q = searchQuery.trim().toLowerCase();
+    if (debouncedSearchQuery.trim()) {
+      const q = debouncedSearchQuery.trim().toLowerCase();
       list = list.filter((task) => {
         const assigneeNames = (task.assignees || []).map((a) => a.name).join(' ');
         return [task.name, task.assigneeName, task.assignerName, assigneeNames, task.description].some((value) =>
@@ -300,7 +293,7 @@ export default function ProjectTasksPanel({
       });
     }
     return list;
-  }, [tasks, activeTab, searchQuery]);
+  }, [tasks, activeTab, debouncedSearchQuery]);
 
   const majorTasks = useMemo(() => filterMajorTasks(tasks), [tasks]);
 
@@ -333,7 +326,7 @@ export default function ProjectTasksPanel({
 
   useEffect(() => {
     setTablePage(1);
-  }, [activeTab, searchQuery]);
+  }, [activeTab, debouncedSearchQuery]);
 
   useEffect(() => {
     const maxPage = Math.max(1, Math.ceil(sortedTableRootTasks.length / TABLE_PAGE_SIZE));
@@ -361,7 +354,7 @@ export default function ProjectTasksPanel({
   }, []);
 
   useEffect(() => {
-    const ids = tableRootTasks.map((t) => t?.id).filter(Boolean);
+    const ids = paginatedTableTasks.map((t) => t?.id).filter(Boolean);
     if (!ids.length) return;
     let cancelled = false;
     (async () => {
@@ -375,7 +368,7 @@ export default function ProjectTasksPanel({
     return () => {
       cancelled = true;
     };
-  }, [tableRootTasks]);
+  }, [paginatedTableTasks]);
 
   const tabsWithBadges = useMemo(() => {
     const counts = { all: majorTasks.length };
@@ -454,23 +447,15 @@ export default function ProjectTasksPanel({
       {
         key: 'status',
         label: 'STATUS',
-        render: (_, row) => {
-          const meta = getTaskStatusMeta(row.strapiStatus);
-          const chrome = STATUS_SELECT_VARIANT_CLASS[meta.variant] || STATUS_SELECT_VARIANT_CLASS.default;
-          return (
-            <div onClick={(event) => event.stopPropagation()}>
-              <Select
-                value={row.strapiStatus}
-                options={TASK_STATUS_OPTIONS}
-                onChange={(status) => updateTask(row, { status })}
-                disabled={savingId === row.id}
-                className={`py-1.5 text-xs font-semibold uppercase tracking-wide ${chrome}`}
-                containerClassName="min-w-[150px]"
-                placeholder="Status"
-              />
-            </div>
-          );
-        },
+        render: (_, row) => (
+          <TableCellTaskStatusSelect
+            status={row.strapiStatus}
+            onStatusChange={(status) => updateTask(row, { status })}
+            saving={savingId === row.id}
+            options={PM_TASK_STATUS_OPTIONS}
+            fillStyle="pm"
+          />
+        ),
       },
       {
         key: 'priority',
@@ -482,7 +467,7 @@ export default function ProjectTasksPanel({
               options={PRIORITY_OPTIONS}
               onChange={(priority) => updateTask(row, { priority })}
               disabled={!canEditTaskInPm(row, currentUserId) || savingId === row.id}
-              className="border-orange-200 bg-orange-50 py-1.5 text-xs font-semibold uppercase tracking-wide text-orange-800"
+              {...pmTableSelectFillProps(row.priority, 'priority')}
               containerClassName="min-w-[130px]"
               placeholder="Priority"
             />

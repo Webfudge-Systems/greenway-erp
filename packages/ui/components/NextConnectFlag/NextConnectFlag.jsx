@@ -1,6 +1,6 @@
 import { clsx } from 'clsx';
 import { Calendar, CalendarCheck } from 'lucide-react';
-import { calendarDayDiff, parseDisplayDate } from '@webfudge/utils';
+import { calendarDayDiff, parseDisplayDate } from '@greenways/utils';
 
 /**
  * @param {string | Date | null | undefined} dateString

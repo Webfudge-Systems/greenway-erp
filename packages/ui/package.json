@@ -19,9 +19,11 @@
   "peerDependencies": {
     "next": "^14.0.0",
     "react": "^18.0.0",
-    "react-dom": "^18.0.0"
+    "react-dom": "^18.0.0",
+    "@greenways/utils": "*"
   },
   "dependencies": {
+    "@greenways/utils": "*",
     "@fullcalendar/core": "^6.1.20",
     "@fullcalendar/daygrid": "^6.1.20",
     "@fullcalendar/interaction": "^6.1.20",
@@ -30,6 +32,7 @@
     "clsx": "^2.0.0",
     "framer-motion": "^10.0.0",
     "lucide-react": "^0.300.0",
+    "recharts": "^3.8.1",
     "tailwind-merge": "^2.6.1"
   },
   "devDependencies": {

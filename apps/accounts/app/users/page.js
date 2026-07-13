@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Clock3, Eye, EyeOff, Mail, MoreHorizontal, Pencil, ShieldBan, ShieldCheck, Trash2, UserCheck, UserPlus, Users, UserX } from 'lucide-react'
 import {
   Avatar,
+  Badge,
   Button,
   Input,
   KPICard,
@@ -15,6 +16,8 @@ import {
   TableCellRole,
   TableRowActionMenuPortal,
   TabsWithActions,
+  useTableColumnPreferences,
+  TableColumnPicker,
 } from '@greenways/ui'
 import AccountsPageHeader from '../../components/AccountsPageHeader'
 import DepartmentPillMultiSelect from '../../components/DepartmentPillMultiSelect'
@@ -58,6 +61,45 @@ function formatDepartmentLabels(user, departmentCatalog = []) {
 
 const ITEMS_PER_PAGE = 15
 
+const COLUMN_VISIBILITY_STORAGE_KEY = 'accounts.users.tableColumnVisibility'
+const COLUMN_ORDER_STORAGE_KEY = 'accounts.users.tableColumnOrder'
+const COLUMN_WIDTHS_STORAGE_KEY = 'accounts.users.tableColumnWidths'
+
+const DEFAULT_COLUMN_WIDTHS = {
+  user: 260,
+  email: 240,
+  role: 140,
+  departments: 180,
+  status: 120,
+  createdAt: 140,
+  updatedAt: 140,
+  actions: 180,
+}
+
+const MIN_COLUMN_WIDTHS = {
+  user: 220,
+  email: 200,
+  actions: 160,
+}
+
+const TOGGLEABLE_COLUMNS = [
+  { key: 'email', label: 'Email' },
+  { key: 'role', label: 'Role' },
+  { key: 'departments', label: 'Departments' },
+  { key: 'status', label: 'Status' },
+  { key: 'createdAt', label: 'Created' },
+  { key: 'updatedAt', label: 'Last updated' },
+]
+
+const REORDERABLE_COLUMN_KEYS = TOGGLEABLE_COLUMNS.map((c) => c.key)
+
+const DEFAULT_ON_COLUMN_KEYS = new Set(['email', 'role', 'departments', 'status', 'createdAt'])
+
+const DEFAULT_COLUMN_VISIBILITY = TOGGLEABLE_COLUMNS.reduce((acc, { key }) => {
+  acc[key] = DEFAULT_ON_COLUMN_KEYS.has(key)
+  return acc
+}, {})
+
 function getUserDisplayName(user) {
   const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim()
   if (fullName) return fullName
@@ -72,10 +114,10 @@ function getUserStatus(user) {
   return 'active'
 }
 
-function getStatusClasses(status) {
-  if (status === 'active') return 'bg-emerald-100 text-emerald-700 border-emerald-200'
-  if (status === 'invited') return 'bg-orange-100 text-orange-700 border-orange-200'
-  return 'bg-red-100 text-red-700 border-red-200'
+function getUserStatusVariant(status) {
+  if (status === 'active') return 'success'
+  if (status === 'invited') return 'warning'
+  return 'danger'
 }
 
 function roleOptionValue(role) {
@@ -153,6 +195,42 @@ export default function UsersPage() {
     if (!editUser) return false
     return editStatus === 'suspended' && getUserStatus(editUser) !== 'suspended'
   }, [editStatus, editUser])
+
+  const {
+    columnVisibility,
+    columnOrder,
+    columnPickerOpen,
+    setColumnPickerOpen,
+    columnDropIndicator,
+    toolbarRef,
+    setColumnVisible,
+    handleColumnDragStart,
+    handleColumnDragEnd,
+    handleColumnRowDragOver,
+    handleColumnListDragLeave,
+    handleColumnDrop,
+    resetColumnTablePreferences,
+    tableResizeProps,
+  } = useTableColumnPreferences({
+    visibilityStorageKey: COLUMN_VISIBILITY_STORAGE_KEY,
+    orderStorageKey: COLUMN_ORDER_STORAGE_KEY,
+    widthsStorageKey: COLUMN_WIDTHS_STORAGE_KEY,
+    defaultVisibility: DEFAULT_COLUMN_VISIBILITY,
+    reorderableKeys: REORDERABLE_COLUMN_KEYS,
+    defaultWidths: DEFAULT_COLUMN_WIDTHS,
+    minWidths: MIN_COLUMN_WIDTHS,
+  })
+
+  useEffect(() => {
+    if (!columnPickerOpen) return
+    const onDocMouseDown = (e) => {
+      if (toolbarRef.current && !toolbarRef.current.contains(e.target)) {
+        setColumnPickerOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onDocMouseDown)
+    return () => document.removeEventListener('mousedown', onDocMouseDown)
+  }, [columnPickerOpen, setColumnPickerOpen, toolbarRef])
 
   const toggleInviteDepartment = useCallback((deptId) => {
     setInviteDepartmentIds((prev) => {
@@ -617,13 +695,7 @@ export default function UsersPage() {
         label: 'STATUS',
         render: (_, user) => {
           const status = getUserStatus(user)
-          return (
-            <span
-              className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold capitalize ${getStatusClasses(status)}`}
-            >
-              {status}
-            </span>
-          )
+          return <Badge variant={getUserStatusVariant(status)} className="capitalize">{status}</Badge>
         },
       },
       {
@@ -706,6 +778,17 @@ export default function UsersPage() {
     [allDepartments, openEditModal, requestUserStatusChange]
   )
 
+  const visibleColumns = useMemo(() => {
+    const byKey = Object.fromEntries(columns.map((c) => [c.key, c]))
+    const out = []
+    if (byKey.user) out.push(byKey.user)
+    for (const key of columnOrder) {
+      if (columnVisibility[key] && byKey[key]) out.push(byKey[key])
+    }
+    if (byKey.actions) out.push(byKey.actions)
+    return out
+  }, [columns, columnVisibility, columnOrder])
+
   return (
     <div className="p-4 md:p-6 space-y-6 bg-white min-h-full">
       <AccountsPageHeader
@@ -722,7 +805,7 @@ export default function UsersPage() {
         <KPICard title="Suspended Users" value={stats.suspended} icon={UserX} colorScheme="orange" />
       </div>
 
-      <div className="relative">
+      <div className="relative" ref={toolbarRef}>
         <TabsWithActions
           tabs={tabItems.map((item) => ({
             key: item.key,
@@ -738,6 +821,24 @@ export default function UsersPage() {
           showAdd
           onAddClick={handleInviteUser}
           addTitle="Invite User"
+          showColumnVisibility
+          onColumnVisibilityClick={() => setColumnPickerOpen((open) => !open)}
+          columnVisibilityTitle="Show, hide, or reorder columns"
+        />
+        <TableColumnPicker
+          open={columnPickerOpen}
+          description="User and actions stay visible. Drag column edges in the table to resize."
+          reorderableRows={TOGGLEABLE_COLUMNS}
+          columnVisibility={columnVisibility}
+          columnOrder={columnOrder}
+          columnDropIndicator={columnDropIndicator}
+          onSetVisible={setColumnVisible}
+          onDragStart={handleColumnDragStart}
+          onDragEnd={handleColumnDragEnd}
+          onRowDragOver={handleColumnRowDragOver}
+          onListDragLeave={handleColumnListDragLeave}
+          onDrop={handleColumnDrop}
+          onReset={resetColumnTablePreferences}
         />
       </div>
 
@@ -753,7 +854,7 @@ export default function UsersPage() {
           </div>
         ) : (
           <>
-            <Table columns={columns} data={paginatedUsers} keyField="id" variant="modern" />
+            <Table columns={visibleColumns} data={paginatedUsers} keyField="id" variant="modern" {...tableResizeProps} />
             {paginatedUsers.length === 0 && (
               <div className="p-12 text-center border-t border-gray-200">
                 <Users className="w-10 h-10 mx-auto mb-3 text-gray-300" />
