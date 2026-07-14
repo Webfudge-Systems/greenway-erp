@@ -1,6 +1,4 @@
 export {
-  calendarDayDiff,
-  parseDisplayDate,
   formatCurrency,
   formatNumber,
   formatPercentage,
