@@ -2,6 +2,7 @@ import { clsx } from 'clsx';
 import { User, Mail, Phone } from 'lucide-react';
 import { Avatar } from '../Avatar';
 import { Badge } from '../Badge';
+import { getNextConnectFlagLabel, getNextConnectFlagVariant } from '../NextConnectFlag/NextConnectFlag';
 import { formatRelativeTime, formatTableDate, ownerDisplayFromUser } from '../../utils/crmTableFormat';
 
 const cell = {
@@ -340,6 +341,40 @@ export function TableCellLeadStatus({ company, className }) {
     <div className={className}>
       <Badge variant={config.variant} className="font-semibold">
         {config.label.toUpperCase()}
+      </Badge>
+    </div>
+  );
+}
+
+const nextConnectBadgeVariant = {
+  today: 'warning',
+  future: 'success',
+  overdue: 'orange',
+};
+
+/**
+ * Next connect date — status-style pill (CRM lead companies table).
+ */
+export function TableCellNextConnect({ date, className }) {
+  const flagVariant = getNextConnectFlagVariant(date);
+  if (!flagVariant) {
+    return <span className={clsx('text-sm text-gray-400', className)}>—</span>;
+  }
+  const label = getNextConnectFlagLabel(date);
+  return (
+    <div className={clsx('min-w-[100px]', className)}>
+      <Badge
+        variant={nextConnectBadgeVariant[flagVariant]}
+        className="whitespace-nowrap font-semibold uppercase"
+        title={
+          flagVariant === 'today'
+            ? 'Connect today'
+            : flagVariant === 'future'
+              ? `Next connect ${label}`
+              : `Overdue — was ${label}`
+        }
+      >
+        {label}
       </Badge>
     </div>
   );

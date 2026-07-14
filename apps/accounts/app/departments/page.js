@@ -28,6 +28,8 @@ import {
   TabsWithActions,
   Textarea,
   ownerDisplayFromUser,
+  useTableColumnPreferences,
+  TableColumnPicker,
 } from '@greenways/ui'
 import AccountsPageHeader from '../../components/AccountsPageHeader'
 import { departmentsService, usersService } from '../../lib/api'
@@ -71,6 +73,36 @@ function normalizeRow(row) {
 
 const EMPTY_FORM = { name: '', description: '', leadId: '', parentId: '', isActive: true }
 
+const COLUMN_VISIBILITY_STORAGE_KEY = 'accounts.departments.tableColumnVisibility'
+const COLUMN_ORDER_STORAGE_KEY = 'accounts.departments.tableColumnOrder'
+const COLUMN_WIDTHS_STORAGE_KEY = 'accounts.departments.tableColumnWidths'
+
+const DEFAULT_COLUMN_WIDTHS = {
+  name: 280,
+  lead: 180,
+  parent: 160,
+  status: 120,
+  actions: 200,
+}
+
+const MIN_COLUMN_WIDTHS = {
+  name: 200,
+  actions: 160,
+}
+
+const TOGGLEABLE_COLUMNS = [
+  { key: 'lead', label: 'Lead' },
+  { key: 'parent', label: 'Parent' },
+  { key: 'status', label: 'Status' },
+]
+
+const REORDERABLE_COLUMN_KEYS = TOGGLEABLE_COLUMNS.map((c) => c.key)
+
+const DEFAULT_COLUMN_VISIBILITY = TOGGLEABLE_COLUMNS.reduce((acc, { key }) => {
+  acc[key] = true
+  return acc
+}, {})
+
 export default function DepartmentsPage() {
   const [rows, setRows] = useState([])
   const [users, setUsers] = useState([])
@@ -86,6 +118,42 @@ export default function DepartmentsPage() {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleteSubmitting, setDeleteSubmitting] = useState(false)
   const [rowActionMenu, setRowActionMenu] = useState(null)
+
+  const {
+    columnVisibility,
+    columnOrder,
+    columnPickerOpen,
+    setColumnPickerOpen,
+    columnDropIndicator,
+    toolbarRef,
+    setColumnVisible,
+    handleColumnDragStart,
+    handleColumnDragEnd,
+    handleColumnRowDragOver,
+    handleColumnListDragLeave,
+    handleColumnDrop,
+    resetColumnTablePreferences,
+    tableResizeProps,
+  } = useTableColumnPreferences({
+    visibilityStorageKey: COLUMN_VISIBILITY_STORAGE_KEY,
+    orderStorageKey: COLUMN_ORDER_STORAGE_KEY,
+    widthsStorageKey: COLUMN_WIDTHS_STORAGE_KEY,
+    defaultVisibility: DEFAULT_COLUMN_VISIBILITY,
+    reorderableKeys: REORDERABLE_COLUMN_KEYS,
+    defaultWidths: DEFAULT_COLUMN_WIDTHS,
+    minWidths: MIN_COLUMN_WIDTHS,
+  })
+
+  useEffect(() => {
+    if (!columnPickerOpen) return
+    const onDocMouseDown = (e) => {
+      if (toolbarRef.current && !toolbarRef.current.contains(e.target)) {
+        setColumnPickerOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onDocMouseDown)
+    return () => document.removeEventListener('mousedown', onDocMouseDown)
+  }, [columnPickerOpen, setColumnPickerOpen, toolbarRef])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -375,6 +443,17 @@ export default function DepartmentsPage() {
     [openEdit, toggleDepartmentStatus]
   )
 
+  const visibleColumns = useMemo(() => {
+    const byKey = Object.fromEntries(columns.map((c) => [c.key, c]))
+    const out = []
+    if (byKey.name) out.push(byKey.name)
+    for (const key of columnOrder) {
+      if (columnVisibility[key] && byKey[key]) out.push(byKey[key])
+    }
+    if (byKey.actions) out.push(byKey.actions)
+    return out
+  }, [columns, columnVisibility, columnOrder])
+
   return (
     <div className="p-4 md:p-6 space-y-6 bg-white min-h-full">
       <AccountsPageHeader
@@ -395,7 +474,7 @@ export default function DepartmentsPage() {
         <KPICard title="Top Level" value={stats.topLevel} icon={Layers} colorScheme="orange" />
       </div>
 
-      <div className="relative">
+      <div className="relative" ref={toolbarRef}>
         <TabsWithActions
           tabs={tabItems.map((item) => ({
             key: item.key,
@@ -411,6 +490,24 @@ export default function DepartmentsPage() {
           showAdd
           onAddClick={openCreate}
           addTitle="Add Department"
+          showColumnVisibility
+          onColumnVisibilityClick={() => setColumnPickerOpen((open) => !open)}
+          columnVisibilityTitle="Show, hide, or reorder columns"
+        />
+        <TableColumnPicker
+          open={columnPickerOpen}
+          description="Department and actions stay visible. Drag column edges in the table to resize."
+          reorderableRows={TOGGLEABLE_COLUMNS}
+          columnVisibility={columnVisibility}
+          columnOrder={columnOrder}
+          columnDropIndicator={columnDropIndicator}
+          onSetVisible={setColumnVisible}
+          onDragStart={handleColumnDragStart}
+          onDragEnd={handleColumnDragEnd}
+          onRowDragOver={handleColumnRowDragOver}
+          onListDragLeave={handleColumnListDragLeave}
+          onDrop={handleColumnDrop}
+          onReset={resetColumnTablePreferences}
         />
       </div>
 
@@ -426,7 +523,7 @@ export default function DepartmentsPage() {
           </div>
         ) : (
           <>
-            <Table columns={columns} data={filtered} keyField="id" variant="modern" />
+            <Table columns={visibleColumns} data={filtered} keyField="id" variant="modern" {...tableResizeProps} />
             {filtered.length === 0 && (
               <div className="border-t border-gray-200 p-12 text-center">
                 <Building2 className="mx-auto mb-3 h-10 w-10 text-gray-300" />

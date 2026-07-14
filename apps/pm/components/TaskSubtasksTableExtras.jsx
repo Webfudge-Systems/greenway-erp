@@ -1,11 +1,11 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Avatar, Button, Select, Table, TableCellCreated, ownerDisplayFromUser } from '@greenways/ui';
+import { Avatar, Button, Select, Table, TableCellCreated, TableCellTaskStatusSelect, PM_TASK_STATUS_OPTIONS, ownerDisplayFromUser } from '@greenways/ui';
 import { ChevronDown, ChevronRight, Copy, Edit3, Eye, Link2, ListTree, Pencil, Plus, Trash2 } from 'lucide-react';
 import PMRowActions from './PMRowActions';
 import TaskAssigneesPicker from './TaskAssigneesPicker';
-import { getTaskStatusMeta, PRIORITY_OPTIONS, TASK_STATUS_OPTIONS } from './PMStatusBadge';
+import { pmTableSelectFillProps, PRIORITY_OPTIONS } from './PMStatusBadge';
 import { canDeleteTaskInPm, canEditTaskInPm } from '../lib/pmOrgRoles';
 import { usePmTableSort } from '../hooks/usePmTableSort';
 
@@ -96,15 +96,6 @@ export function TaskSubtasksAfterRow({
     });
   };
 
-  const statusChrome = {
-    primary: 'border-blue-200 bg-blue-50 text-blue-800',
-    warning: 'border-amber-200 bg-amber-50 text-amber-800',
-    purple: 'border-purple-200 bg-purple-50 text-purple-800',
-    success: 'border-green-200 bg-green-50 text-green-800',
-    danger: 'border-red-200 bg-red-50 text-red-800',
-    default: 'border-gray-200 bg-gray-50 text-gray-800',
-  };
-
   const subtaskColumns = useMemo(
     () => [
     {
@@ -156,23 +147,16 @@ export function TaskSubtasksAfterRow({
     {
       key: 'status',
       label: 'STATUS',
-      render: (_, st) => {
-        const meta = getTaskStatusMeta(st.strapiStatus || 'SCHEDULED');
-        const chrome = statusChrome[meta.variant] || statusChrome.default;
-        return (
-          <div onClick={(e) => e.stopPropagation()}>
-            <Select
-              value={st.strapiStatus}
-              options={TASK_STATUS_OPTIONS}
-              onChange={(status) => onUpdateTask?.(st, { status })}
-              disabled={savingId === st.id}
-              className={`py-1.5 text-xs font-semibold uppercase tracking-wide ${chrome}`}
-              containerClassName="min-w-[140px]"
-              placeholder="Status"
-            />
-          </div>
-        );
-      },
+      render: (_, st) => (
+        <TableCellTaskStatusSelect
+          status={st.strapiStatus}
+          onStatusChange={(status) => onUpdateTask?.(st, { status })}
+          saving={savingId === st.id}
+          options={PM_TASK_STATUS_OPTIONS}
+          fillStyle="pm"
+          containerClassName="min-w-[140px]"
+        />
+      ),
     },
     {
       key: 'priority',
@@ -184,7 +168,7 @@ export function TaskSubtasksAfterRow({
             options={PRIORITY_OPTIONS}
             onChange={(priority) => onUpdateTask?.(st, { priority })}
             disabled={!canEditTaskInPm(st, currentUserId) || savingId === st.id}
-            className="border-orange-200 bg-orange-50 py-1.5 text-xs font-semibold uppercase tracking-wide text-orange-800"
+            {...pmTableSelectFillProps(st.priority, 'priority')}
             containerClassName="min-w-[120px]"
             placeholder="Priority"
           />

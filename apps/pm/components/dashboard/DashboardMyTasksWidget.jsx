@@ -24,7 +24,7 @@ export function isOpenDashboardTask(task) {
   return task && !TERMINAL_STATUSES.has(task.strapiStatus)
 }
 
-/** Open collaborator tasks only — overdue first, then due date, then recently updated. */
+/** Open assigned tasks only — overdue first, then due date, then recently updated. */
 export function sortDashboardMyTasks(tasks) {
   const list = (tasks || []).filter(isOpenDashboardTask)
   list.sort((a, b) => {
@@ -232,7 +232,7 @@ export default function DashboardMyTasksWidget({
               </span>
             ) : null}
           </div>
-          <p className="mt-0.5 text-xs text-gray-500">Open tasks where you are a collaborator</p>
+          <p className="mt-0.5 text-xs text-gray-500">Open tasks assigned to you</p>
         </div>
         <Button
           variant="ghost"

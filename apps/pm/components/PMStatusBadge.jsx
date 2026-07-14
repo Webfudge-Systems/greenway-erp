@@ -1,6 +1,6 @@
 'use client';
 
-import { Badge } from '@greenways/ui';
+import { Badge, crmPmTaskTableSelectFillProps } from '@greenways/ui';
 
 export const TASK_STATUS_OPTIONS = [
   { value: 'SCHEDULED', label: 'To Do' },
@@ -60,6 +60,28 @@ export function getProjectStatusMeta(status) {
 
 export function getPriorityMeta(priority) {
   return PRIORITY_META[(priority || '').toLowerCase()] || { variant: 'default', label: priority || '—' };
+}
+
+const PRIORITY_SELECT_FILL_CLASS = {
+  high: 'border-red-200 bg-red-50 text-red-800 hover:bg-red-100',
+  medium: 'border-orange-200 bg-orange-50 text-orange-800 hover:bg-orange-100',
+  low: 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100',
+};
+
+export function getPrioritySelectFillClass(priority) {
+  return PRIORITY_SELECT_FILL_CLASS[(priority || '').toLowerCase()] || PRIORITY_SELECT_FILL_CLASS.medium;
+}
+
+/** Shared className + chevron for filled PM table selects (priority only; status uses TableCellTaskStatusSelect). */
+export function pmTableSelectFillProps(value, kind = 'status') {
+  if (kind === 'priority') {
+    const fill = getPrioritySelectFillClass(value);
+    return {
+      className: `rounded-lg py-1.5 text-xs font-semibold uppercase tracking-wide shadow-sm ${fill}`,
+      chevronClassName: 'text-current opacity-60',
+    };
+  }
+  return crmPmTaskTableSelectFillProps(value);
 }
 
 export function PMStatusBadge({ status, type = 'task', className }) {
