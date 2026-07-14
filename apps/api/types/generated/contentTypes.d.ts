@@ -854,6 +854,65 @@ export interface ApiDirectMessageDirectMessage
   };
 }
 
+export interface ApiEntityAttachmentEntityAttachment
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'entity_attachments';
+  info: {
+    description: 'Files linked to CRM/PM entities (chat or files tab)';
+    displayName: 'Entity Attachment';
+    pluralName: 'entity-attachments';
+    singularName: 'entity-attachment';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    crmActivity: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::crm-activity.crm-activity'
+    >;
+    file: Schema.Attribute.Media<'images' | 'files' | 'videos' | 'audios'> &
+      Schema.Attribute.Required;
+    fileName: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::entity-attachment.entity-attachment'
+    > &
+      Schema.Attribute.Private;
+    organization: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::organization.organization'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    source: Schema.Attribute.Enumeration<['files_tab', 'chat']> &
+      Schema.Attribute.DefaultTo<'files_tab'>;
+    subjectId: Schema.Attribute.Integer & Schema.Attribute.Required;
+    subjectType: Schema.Attribute.Enumeration<
+      [
+        'contact',
+        'deal',
+        'lead_company',
+        'client_account',
+        'task',
+        'project',
+        'meeting',
+      ]
+    > &
+      Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    uploadedBy: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+  };
+}
+
 export interface ApiInvitationInvitation extends Struct.CollectionTypeSchema {
   collectionName: 'invitations';
   info: {
@@ -1487,6 +1546,7 @@ export interface ApiProjectProject extends Struct.CollectionTypeSchema {
     description: Schema.Attribute.Text;
     endDate: Schema.Attribute.DateTime;
     icon: Schema.Attribute.String;
+    isPrivate: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -2508,6 +2568,7 @@ declare module '@strapi/strapi' {
       'api::deal.deal': ApiDealDeal;
       'api::department.department': ApiDepartmentDepartment;
       'api::direct-message.direct-message': ApiDirectMessageDirectMessage;
+      'api::entity-attachment.entity-attachment': ApiEntityAttachmentEntityAttachment;
       'api::invitation.invitation': ApiInvitationInvitation;
       'api::invoice.invoice': ApiInvoiceInvoice;
       'api::lead-company.lead-company': ApiLeadCompanyLeadCompany;

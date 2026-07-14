@@ -22,6 +22,7 @@
     "react-dom": "^18.0.0"
   },
   "dependencies": {
+    "@greenways/utils": "*",
     "@fullcalendar/core": "^6.1.20",
     "@fullcalendar/daygrid": "^6.1.20",
     "@fullcalendar/interaction": "^6.1.20",
@@ -30,6 +31,7 @@
     "clsx": "^2.0.0",
     "framer-motion": "^10.0.0",
     "lucide-react": "^0.300.0",
+    "recharts": "^2.15.0",
     "tailwind-merge": "^2.6.1"
   },
   "devDependencies": {

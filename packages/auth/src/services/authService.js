@@ -522,7 +522,7 @@ class AuthService {
   getCurrentDepartment() {
     const id = this.getCurrentDepartmentId();
     if (!id) return null;
-    return this.getSwitchableDepartments().find((d) => d.id === id) || null;
+    return this.getSwitchableDepartments().find((d) => Number(d.id) === Number(id)) || null;
   }
 
   /**
@@ -537,9 +537,8 @@ class AuthService {
       localStorage.removeItem('current-department-id');
       return true;
     }
-    const found = depts.find(
-      (d) => d.id === departmentId || d.id === parseInt(departmentId, 10)
-    );
+    const want = Number.parseInt(String(departmentId), 10);
+    const found = depts.find((d) => Number(d.id) === want);
     if (!found) return false;
     localStorage.setItem('current-department-id', String(found.id));
     return true;
@@ -556,11 +555,12 @@ class AuthService {
       localStorage.removeItem('current-department-id');
       return;
     }
-    const primary = org?.primaryDepartmentId;
+    const primary = org?.primaryDepartmentId != null ? Number(org.primaryDepartmentId) : null;
     const existing = this.getCurrentDepartmentId();
-    if (existing && depts.some((d) => d.id === existing)) return;
+    if (existing && depts.some((d) => Number(d.id) === Number(existing))) return;
     const pick =
-      (primary && depts.some((d) => d.id === primary) ? primary : null) || depts[0]?.id;
+      (primary && depts.some((d) => Number(d.id) === primary) ? primary : null) ||
+      Number(depts[0]?.id);
     if (pick) localStorage.setItem('current-department-id', String(pick));
   }
 

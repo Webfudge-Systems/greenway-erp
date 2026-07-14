@@ -22,7 +22,8 @@ import {
   resolveUserInitials,
   resolveUserRole,
 } from '@greenways/auth'
-import { Avatar, Card } from '../index'
+import { Avatar } from '../Avatar'
+import { Card } from '../Card'
 import { WorkspaceBackButton } from '../WorkspaceBackButton'
 import { LoadingSpinner } from '../../feedback'
 import { PAGE_HEADER_SEARCH_INPUT_CLASS } from '../../utils/pageHeaderToolbar'

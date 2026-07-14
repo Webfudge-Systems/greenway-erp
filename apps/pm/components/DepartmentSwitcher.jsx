@@ -67,7 +67,7 @@ export default function DepartmentSwitcher({ collapsed = false, className = '' }
 
   const currentLabel = useMemo(() => {
     if (loading) return 'Loading…'
-    const match = departments.find((d) => d.id === currentId)
+    const match = departments.find((d) => Number(d.id) === Number(currentId))
     if (match?.name) return match.name
     if (departments.length === 1) return departments[0].name
     return departments.length ? 'Select department' : 'No departments'
@@ -137,7 +137,7 @@ export default function DepartmentSwitcher({ collapsed = false, className = '' }
           role="listbox"
         >
           {departments.map((dept) => {
-            const active = dept.id === currentId
+            const active = Number(dept.id) === Number(currentId)
             return (
               <li key={dept.id}>
                 <button

@@ -39,7 +39,9 @@ function shouldSkipGetCache(path) {
 }
 
 /**
- * Scoped per user + org + role + URL so RBAC and tenant isolation stay correct.
+ * Scoped per user + org + role + department + URL so RBAC, tenant, and
+ * department isolation stay correct. Omitting department caused Projects /
+ * Dashboard to keep serving the first department's cached payload after switch.
  * @param {import('koa').Context} ctx
  */
 function buildCacheKey(ctx) {
@@ -49,13 +51,17 @@ function buildCacheKey(ctx) {
     ctx.request.headers['x-organization-id'] ??
     'none';
   const role = ctx.state.orgRoleCode ?? 'none';
+  const departmentId =
+    ctx.state.departmentId ??
+    ctx.request.headers['x-department-id'] ??
+    'none';
   const qs = ctx.querystring || '';
   const digest = crypto
     .createHash('sha256')
     .update(`${ctx.path}?${qs}`)
     .digest('hex')
     .slice(0, 20);
-  return `u:${userId}:o:${orgId}:r:${role}:p:${digest}`;
+  return `u:${userId}:o:${orgId}:r:${role}:d:${departmentId}:p:${digest}`;
 }
 
 module.exports = () => {

@@ -30,7 +30,12 @@ export function PmDepartmentProvider({ children }) {
   const switchDepartment = useCallback(
     (id) => {
       if (!authService.setCurrentDepartment(id)) return false
-      bump(id)
+      // Notify listeners (sidebar options, etc.). Provider listener bumps revision.
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('gw:department-changed'))
+      } else {
+        bump(id)
+      }
       return true
     },
     [bump]

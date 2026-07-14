@@ -21,7 +21,10 @@ function departmentIdsFromMembership(membership) {
   const raw = membership?.departments;
   const list = Array.isArray(raw) ? raw : raw != null ? [raw] : [];
   return list
-    .map((d) => (typeof d === 'object' && d != null ? d.id : Number(d)))
+    .map((d) => {
+      if (typeof d === 'object' && d != null) return Number(d.id);
+      return Number(d);
+    })
     .filter((id) => id && !Number.isNaN(id));
 }
 

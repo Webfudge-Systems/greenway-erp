@@ -47,6 +47,7 @@ import {
   Lock,
 } from 'lucide-react';
 import PMPageHeader from '../../components/PMPageHeader';
+import { usePmDepartmentRevision } from '../../context/PmDepartmentContext';
 import { ProgressBar as PMProgress } from '@greenways/ui';
 import PMRowActions from '../../components/PMRowActions';
 import ProjectsKanbanBoard from '../../components/ProjectsKanbanBoard';
@@ -351,6 +352,7 @@ function TeamAvatarStack({ members, maxShown = 4, className }) {
 export default function ProjectsPage() {
   const router = useRouter();
   const { user: authUser } = useAuth();
+  const departmentRevision = usePmDepartmentRevision();
   const currentUserId = useMemo(() => {
     const u = authUser?.attributes || authUser;
     return u?.id ?? authUser?.id ?? null;
@@ -431,7 +433,7 @@ export default function ProjectsPage() {
       setKpiRows([]);
       setKpiTotal(0);
     }
-  }, []);
+  }, [departmentRevision]);
 
   const loadProjects = useCallback(async () => {
     try {
@@ -456,7 +458,7 @@ export default function ProjectsPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, currentPage, filters.ownerId, filters.status, searchQuery]);
+  }, [activeTab, currentPage, filters.ownerId, filters.status, searchQuery, departmentRevision]);
 
   useEffect(() => {
     loadProjects();
