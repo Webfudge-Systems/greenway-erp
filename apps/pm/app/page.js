@@ -19,13 +19,20 @@ import taskService from '../lib/api/taskService'
 import strapiClient from '../lib/strapiClient'
 import { canReadPM } from '../lib/rbac'
 import { transformTask, transformUser, transformProject } from '../lib/api/dataTransformers'
-import { filterMajorTasks } from '../lib/taskListUtils'
+import { filterMajorTasks, filterMyTasksTableRoots } from '../lib/taskListUtils'
 import { usePmDepartmentRevision } from '../context/PmDepartmentContext'
 
 const OPEN_TASK_STATUSES = new Set(['COMPLETED', 'CANCELLED'])
 
 function isOpenAssignedTask(task) {
   return task && !OPEN_TASK_STATUSES.has(task.strapiStatus)
+}
+
+function isAssignedToUser(task, userId) {
+  if (!task || userId == null) return false
+  const uid = String(userId)
+  if ((task.assigneeUserIds || []).map(String).includes(uid)) return true
+  return (task.assignees || []).some((a) => a?.id != null && String(a.id) === uid)
 }
 
 /**
@@ -57,7 +64,6 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [projects, setProjects] = useState([])
   const [allTasks, setAllTasks] = useState([])
-  const [collaboratorTasks, setCollaboratorTasks] = useState([])
   const [assigneeTasks, setAssigneeTasks] = useState([])
   const [people, setPeople] = useState([])
   const [stats, setStats] = useState({ todo: 0, inProgress: 0, done: 0, overdue: 0 })
@@ -75,9 +81,13 @@ export default function DashboardPage() {
   const canViewProjects = canReadPM('projects')
   const canViewTasks = canReadPM('tasks') || canReadPM('my_tasks')
 
-  const openCollaboratorTasks = useMemo(
-    () => collaboratorTasks.filter(isOpenAssignedTask),
-    [collaboratorTasks]
+  const openAssigneeTasks = useMemo(
+    () =>
+      filterMyTasksTableRoots(
+        assigneeTasks.filter(isOpenAssignedTask),
+        allTasks
+      ),
+    [assigneeTasks, allTasks]
   )
 
   const majorTasks = useMemo(() => filterMajorTasks(allTasks), [allTasks])
@@ -88,22 +98,12 @@ export default function DashboardPage() {
         setLoading(true)
         const userId = getUserId()
 
-        const [projectsRes, allTasksRes, usersRes, assigneeRes, collabRes] = await Promise.allSettled([
+        const [projectsRes, allTasksRes, usersRes] = await Promise.allSettled([
           canViewProjects
             ? projectService.getAllProjects({ pageSize: 10, sort: 'updatedAt:desc' })
             : Promise.resolve({ data: [] }),
           canViewTasks ? taskService.fetchAllTasks({ pageSize: 500, sort: 'updatedAt:desc' }).then((data) => ({ data })) : Promise.resolve({ data: [] }),
           strapiClient.getXtrawrkxUsers({ pageSize: 200 }),
-          canViewTasks && userId
-            ? taskService.getPMTasksByAssignee(userId, { pageSize: 100 })
-            : Promise.resolve({ data: [] }),
-          userId
-            ? taskService.getCollaboratorTasks(userId, {
-                pageSize: 100,
-                sort: 'updatedAt:desc',
-                openOnly: true,
-              })
-            : Promise.resolve({ data: [] }),
         ])
 
         if (projectsRes.status === 'fulfilled') {
@@ -127,16 +127,22 @@ export default function DashboardPage() {
           setAllTasks(transformed)
         }
 
-        if (assigneeRes.status === 'fulfilled') {
-          setAssigneeTasks((assigneeRes.value?.data || []).map(transformTask).filter(Boolean))
+        if (canViewTasks && userId) {
+          try {
+            const mineRaw = await taskService.fetchPMTasksByAssignee(userId, {
+              pageSize: 500,
+              sort: 'updatedAt:desc',
+            })
+            const mine = mineRaw
+              .map(transformTask)
+              .filter(Boolean)
+              .filter((task) => isAssignedToUser(task, userId))
+            setAssigneeTasks(mine)
+          } catch {
+            setAssigneeTasks([])
+          }
         } else {
           setAssigneeTasks([])
-        }
-
-        if (collabRes.status === 'fulfilled') {
-          setCollaboratorTasks((collabRes.value?.data || []).map(transformTask).filter(Boolean))
-        } else {
-          setCollaboratorTasks([])
         }
 
         if (usersRes.status === 'fulfilled') {
@@ -238,8 +244,8 @@ export default function DashboardPage() {
       <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-5 lg:items-stretch">
         <div className={`lg:col-span-3 ${DASHBOARD_MAIN_ROW_CLASS}`}>
           <DashboardMyTasksWidget
-            tasks={openCollaboratorTasks}
-            totalCount={openCollaboratorTasks.length}
+            tasks={openAssigneeTasks}
+            totalCount={openAssigneeTasks.length}
             loading={false}
             className="w-full"
           />

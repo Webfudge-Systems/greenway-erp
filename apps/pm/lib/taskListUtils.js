@@ -16,6 +16,27 @@ export function filterMajorTasks(tasks) {
   return list.filter((t) => !t?.parentId || !idSet.has(t.parentId));
 }
 
+/** True when the task has at least one subtask in `tasks` or on populated `subtasks` / `subtaskCount`. */
+export function taskHasSubtasks(task, tasks) {
+  if (!task?.id) return false;
+  const parentId = Number(task.id);
+  if ((tasks || []).some((t) => t?.parentId != null && Number(t.parentId) === parentId)) {
+    return true;
+  }
+  const count = Number(task.subtaskCount ?? task.subtasks?.length ?? 0);
+  return count > 0;
+}
+
+/**
+ * My Tasks tab root rows: keep assigned subtasks; hide major tasks that have subtasks
+ * (work is tracked on subtasks instead of the parent row).
+ */
+export function filterMyTasksTableRoots(filteredTasks, allTasks) {
+  return (filteredTasks || []).filter(
+    (task) => task?.parentId || !taskHasSubtasks(task, allTasks)
+  );
+}
+
 /**
  * Map parent id → child tasks for inline expand rows.
  * @param {object} [options.excludeTaskIds] — ids already shown as root rows (avoid duplicates in My Tasks).
