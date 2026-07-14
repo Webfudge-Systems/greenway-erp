@@ -2,6 +2,35 @@
  * Centralized formatting utilities
  */
 
+/** Parse API / display values to a local calendar date, or null if invalid. */
+export function parseDisplayDate(dateString) {
+  if (!dateString) return null;
+  if (dateString instanceof Date) {
+    if (Number.isNaN(dateString.getTime())) return null;
+    return new Date(dateString.getFullYear(), dateString.getMonth(), dateString.getDate());
+  }
+  const raw = String(dateString).trim();
+  if (!raw) return null;
+  const isoDate = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
+  if (isoDate) {
+    const parsed = new Date(Number(isoDate[1]), Number(isoDate[2]) - 1, Number(isoDate[3]));
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+}
+
+/** Whole-day difference from today in local time (positive = future). */
+export function calendarDayDiff(date) {
+  const target = date instanceof Date ? date : parseDisplayDate(date);
+  if (!target) return 0;
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const msPerDay = 24 * 60 * 60 * 1000;
+  return Math.round((target.getTime() - today.getTime()) / msPerDay);
+}
+
 export function formatCurrency(amount, options = {}, locale = 'en-IN') {
   if (typeof amount !== 'number' || isNaN(amount)) return '₹0';
   let formatOptions = {};
