@@ -62,7 +62,7 @@
     "clientAccount": {
       "type": "relation",
       "relation": "manyToOne",
-      "target": "api::lead-company.lead-company"
+      "target": "api::client-account.client-account"
     },
     "organization": {
       "type": "relation",

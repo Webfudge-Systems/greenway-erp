@@ -152,7 +152,7 @@ export function transformProject(strapiProject) {
     strapiStatus: p.status || 'PLANNING',
     startDate: p.startDate || p.start_date || null,
     endDate: p.endDate || p.end_date || p.dueDate || null,
-    budget: p.budget || null,
+    budget: p.budget != null && p.budget !== '' ? p.budget : null,
     progress,
     totalTasks,
     completedTasks,

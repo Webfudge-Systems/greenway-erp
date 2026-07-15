@@ -201,6 +201,7 @@ export default function ProjectDetailPage() {
   const [fileCount, setFileCount] = useState(0);
   const [users, setUsers] = useState([]);
   const [clientOptions, setClientOptions] = useState([]);
+  const [clientsLoaded, setClientsLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -278,6 +279,8 @@ export default function ProjectDetailPage() {
     } catch (error) {
       console.error('Load clients error:', error);
       setClientOptions([]);
+    } finally {
+      setClientsLoaded(true);
     }
   }, []);
 
@@ -420,23 +423,43 @@ export default function ProjectDetailPage() {
     try {
       setSaving(true);
       setProjectInfoSaveError('');
-      await projectService.updateProject(project.id, {
+      const budgetRaw = String(projectInfoDraft.budget ?? '').trim();
+      const budgetNum = budgetRaw === '' ? null : Number(budgetRaw);
+      if (budgetRaw !== '' && !Number.isFinite(budgetNum)) {
+        setProjectInfoSaveError('Budget must be a valid number.');
+        return;
+      }
+      const payload = {
         name: projectInfoDraft.name.trim(),
         description: projectInfoDraft.description?.trim() || null,
         status: projectInfoDraft.status,
         startDate: projectInfoDraft.startDate || null,
         endDate: projectInfoDraft.endDate || null,
-        budget: projectInfoDraft.budget ? Number(projectInfoDraft.budget) : null,
-        projectManager: projectInfoDraft.projectManagerId ? Number(projectInfoDraft.projectManagerId) : null,
-        clientAccount: projectInfoDraft.clientId ? Number(projectInfoDraft.clientId) : null,
-      });
+        budget: budgetNum,
+        projectManager: projectInfoDraft.projectManagerId
+          ? Number(projectInfoDraft.projectManagerId)
+          : null,
+      };
+      // Only touch clientAccount once picker options have loaded, so we do not send
+      // stale lead-company ids from the old (incorrect) relation target.
+      if (clientsLoaded) {
+        const clientStillValid =
+          Boolean(projectInfoDraft.clientId) &&
+          clientOptions.some((o) => String(o.value) === String(projectInfoDraft.clientId));
+        if (clientStillValid) {
+          payload.clientAccount = Number(projectInfoDraft.clientId);
+        } else if (project.clientAccountId || projectInfoDraft.clientId) {
+          payload.clientAccount = null;
+        }
+      }
+      await projectService.updateProject(project.id, payload);
       setEditingProjectInfo(false);
       setProjectInfoDraft(null);
       await loadProject();
       await reloadProjectTimeline({ silent: true });
     } catch (e) {
       console.error('Save project info error:', e);
-      setProjectInfoSaveError('Could not save changes. Try again.');
+      setProjectInfoSaveError(e?.message || 'Could not save changes. Try again.');
     } finally {
       setSaving(false);
     }

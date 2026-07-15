@@ -21,6 +21,13 @@ module.exports = {
   async bootstrap({ strapi }) {
     console.log('🚀 Strapi is bootstrapping...');
 
+    try {
+      const { repairProjectClientAccountLink } = require('./utils/repair-project-client-account-link');
+      await repairProjectClientAccountLink(strapi);
+    } catch (e) {
+      console.warn('⚠️ Could not repair project clientAccount link table:', e?.message || e);
+    }
+
     const forceSeed = process.env.SEED_DATA === 'true';
     let runSeed = forceSeed;
     if (!runSeed) {

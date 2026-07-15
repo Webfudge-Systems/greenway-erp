@@ -1534,7 +1534,7 @@ export interface ApiProjectProject extends Struct.CollectionTypeSchema {
     budget: Schema.Attribute.Decimal;
     clientAccount: Schema.Attribute.Relation<
       'manyToOne',
-      'api::lead-company.lead-company'
+      'api::client-account.client-account'
     >;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &

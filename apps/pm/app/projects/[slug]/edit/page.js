@@ -177,13 +177,19 @@ export default function EditProjectPage() {
     try {
       setSaving(true);
       setErrors((prev) => ({ ...prev, submit: '' }));
+      const budgetRaw = String(form.budget ?? '').trim();
+      const budgetNum = budgetRaw === '' ? null : Number(budgetRaw);
+      if (budgetRaw !== '' && !Number.isFinite(budgetNum)) {
+        setErrors({ budget: 'Budget must be a valid number.' });
+        return;
+      }
       const payload = {
         name: form.name.trim(),
         description: form.description.trim() || null,
         status: form.status,
         startDate: form.startDate || null,
         endDate: form.endDate || null,
-        budget: form.budget ? Number(form.budget) : null,
+        budget: budgetNum,
       };
       if (form.projectManagerId) payload.projectManager = Number(form.projectManagerId);
       else payload.projectManager = null;
@@ -196,7 +202,7 @@ export default function EditProjectPage() {
       router.push(`/projects/${projectSlug || projectId}`);
     } catch (err) {
       console.error('Update project error:', err);
-      setErrors({ submit: 'Failed to save project. Please try again.' });
+      setErrors({ submit: err?.message || 'Failed to save project. Please try again.' });
     } finally {
       setSaving(false);
     }
