@@ -78,7 +78,7 @@ function formatShortDate(iso) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-function TaskKanbanCardInner({ task, router }) {
+function TaskKanbanCardInner({ task, router, hideProject = false }) {
   const overdue = isTaskOverdue(task)
   const pri = (task.priority || '').toLowerCase()
 
@@ -94,7 +94,7 @@ function TaskKanbanCardInner({ task, router }) {
         </button>
         <GripVertical className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-300 opacity-0 transition-opacity group-hover:opacity-100" />
       </div>
-      {task.project ? (
+      {!hideProject && task.project ? (
         <button
           type="button"
           onClick={(e) => {
@@ -132,7 +132,7 @@ function TaskKanbanCardInner({ task, router }) {
   )
 }
 
-function TaskKanbanCard({ task, router, overlay = false }) {
+function TaskKanbanCard({ task, router, overlay = false, hideProject = false }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: String(task.id),
   })
@@ -154,12 +154,12 @@ function TaskKanbanCard({ task, router, overlay = false }) {
         .filter(Boolean)
         .join(' ')}
     >
-      <TaskKanbanCardInner task={task} router={router} />
+      <TaskKanbanCardInner task={task} router={router} hideProject={hideProject} />
     </div>
   )
 }
 
-function KanbanColumn({ stageKey, label, tasks, isOver, router }) {
+function KanbanColumn({ stageKey, label, tasks, isOver, router, hideProject = false }) {
   const { setNodeRef } = useDroppable({ id: stageKey })
   const style = STAGE_STYLES[stageKey] || STAGE_STYLES.SCHEDULED
 
@@ -193,7 +193,9 @@ function KanbanColumn({ stageKey, label, tasks, isOver, router }) {
             </p>
           </div>
         ) : (
-          tasks.map((t) => <TaskKanbanCard key={t.id} task={t} router={router} />)
+          tasks.map((t) => (
+            <TaskKanbanCard key={t.id} task={t} router={router} hideProject={hideProject} />
+          ))
         )}
       </div>
     </div>
@@ -203,7 +205,7 @@ function KanbanColumn({ stageKey, label, tasks, isOver, router }) {
 /**
  * CRM pipeline-style kanban: columns by task status, drag cards to change status.
  */
-export function MyTasksKanbanBoard({ tasks, router, updateTask, activeTab }) {
+export function MyTasksKanbanBoard({ tasks, router, updateTask, activeTab, hideProject = false }) {
   const [activeId, setActiveId] = useState(null)
   const [overId, setOverId] = useState(null)
 
@@ -278,13 +280,14 @@ export function MyTasksKanbanBoard({ tasks, router, updateTask, activeTab }) {
             tasks={colTasks}
             isOver={overId === key}
             router={router}
+            hideProject={hideProject}
           />
         ))}
       </div>
       <DragOverlay dropAnimation={{ duration: 180, easing: 'ease' }}>
         {activeTask ? (
           <div className="w-[272px] rotate-1 rounded-xl border border-orange-300 bg-white p-3.5 shadow-2xl ring-2 ring-orange-400/30">
-            <TaskKanbanCardInner task={activeTask} router={router} />
+            <TaskKanbanCardInner task={activeTask} router={router} hideProject={hideProject} />
           </div>
         ) : null}
       </DragOverlay>
@@ -295,7 +298,7 @@ export function MyTasksKanbanBoard({ tasks, router, updateTask, activeTab }) {
 /**
  * List grouped by workflow status (same order as kanban columns).
  */
-export function MyTasksListByStatus({ tasks, router, updateTask, savingId }) {
+export function MyTasksListByStatus({ tasks, router, updateTask, savingId, hideProject = false }) {
   const grouped = useMemo(() => {
     const by = {}
     KANBAN_STAGES.forEach(({ key }) => {
@@ -335,7 +338,7 @@ export function MyTasksListByStatus({ tasks, router, updateTask, savingId }) {
             </span>
           </div>
           <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
-            <table className="min-w-[980px] w-full table-fixed">
+            <table className={`${hideProject ? 'min-w-[760px]' : 'min-w-[980px]'} w-full table-fixed`}>
               <thead className="bg-gray-50">
                 <tr className="text-left">
                   <th className="w-[170px] px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-gray-600">
@@ -344,9 +347,11 @@ export function MyTasksListByStatus({ tasks, router, updateTask, savingId }) {
                   <th className="px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-gray-600">
                     Task
                   </th>
-                  <th className="w-[210px] px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-gray-600">
-                    Project
-                  </th>
+                  {!hideProject ? (
+                    <th className="w-[210px] px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-gray-600">
+                      Project
+                    </th>
+                  ) : null}
                   <th className="w-[160px] px-3 py-2.5 text-xs font-bold uppercase tracking-wider text-gray-600">
                     Priority
                   </th>
@@ -396,26 +401,28 @@ export function MyTasksListByStatus({ tasks, router, updateTask, savingId }) {
                           </div>
                         </button>
                       </td>
-                      <td className="px-3 py-2.5 align-top">
-                        {row.project ? (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              const slugOrId = row.projectSlug || row.projectId
-                              if (slugOrId != null && slugOrId !== '')
-                                router.push(`/projects/${slugOrId}`)
-                            }}
-                            className="inline-flex max-w-[190px] items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-orange-900 shadow-sm hover:border-orange-300"
-                          >
-                            <FolderKanban className="h-3.5 w-3.5 shrink-0 text-orange-600" />
-                            <span className="truncate">{row.project}</span>
-                            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-orange-400" />
-                          </button>
-                        ) : (
-                          <span className="text-xs text-gray-400">—</span>
-                        )}
-                      </td>
+                      {!hideProject ? (
+                        <td className="px-3 py-2.5 align-top">
+                          {row.project ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                const slugOrId = row.projectSlug || row.projectId
+                                if (slugOrId != null && slugOrId !== '')
+                                  router.push(`/projects/${slugOrId}`)
+                              }}
+                              className="inline-flex max-w-[190px] items-center gap-1.5 rounded-lg border border-orange-200 bg-orange-50 px-2.5 py-1.5 text-xs font-semibold text-orange-900 shadow-sm hover:border-orange-300"
+                            >
+                              <FolderKanban className="h-3.5 w-3.5 shrink-0 text-orange-600" />
+                              <span className="truncate">{row.project}</span>
+                              <ChevronRight className="h-3.5 w-3.5 shrink-0 text-orange-400" />
+                            </button>
+                          ) : (
+                            <span className="text-xs text-gray-400">—</span>
+                          )}
+                        </td>
+                      ) : null}
                       <td className="px-3 py-2.5 align-top">
                         <div onClick={(e) => e.stopPropagation()}>
                           <Select

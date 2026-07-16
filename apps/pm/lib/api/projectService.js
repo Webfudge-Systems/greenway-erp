@@ -1,5 +1,41 @@
 import strapiClient from '../strapiClient';
 
+/** Fast detail fetch — task id/status only (full task rows load via /tasks). */
+const PROJECT_DETAIL_POPULATE = {
+  'populate[projectManager]': '*',
+  'populate[teamMembers]': '*',
+  'populate[clientAccount]': '*',
+  'populate[tasks][fields][0]': 'id',
+  'populate[tasks][fields][1]': 'status',
+};
+
+/** Legacy heavy populate — avoid on detail page; loads every task relation. */
+const PROJECT_FULL_TASKS_POPULATE = {
+  ...PROJECT_DETAIL_POPULATE,
+  'populate[tasks][populate][assignee]': '*',
+  'populate[tasks][populate][assigner]': '*',
+  'populate[tasks][populate][collaborators]': '*',
+  'populate[tasks][populate][subtasks]': '*',
+};
+
+function normalizeProjectFetchOptions(options) {
+  if (options === false) return { populate: false, fullTasks: false };
+  if (options === true) return { populate: true, fullTasks: false };
+  if (typeof options === 'object' && options !== null) {
+    return {
+      populate: options.populate !== false,
+      fullTasks: Boolean(options.fullTasks),
+    };
+  }
+  return { populate: true, fullTasks: false };
+}
+
+function projectPopulateParams(options) {
+  const { populate, fullTasks } = normalizeProjectFetchOptions(options);
+  if (!populate) return {};
+  return fullTasks ? PROJECT_FULL_TASKS_POPULATE : PROJECT_DETAIL_POPULATE;
+}
+
 class ProjectService {
   async getAllProjects(options = {}) {
     try {
@@ -38,17 +74,9 @@ class ProjectService {
     }
   }
 
-  async getProjectById(id, populate = true) {
+  async getProjectById(id, options = true) {
     try {
-      const params = populate ? {
-        'populate[projectManager]': '*',
-        'populate[teamMembers]': '*',
-        'populate[tasks][populate][assignee]': '*',
-        'populate[tasks][populate][assigner]': '*',
-        'populate[tasks][populate][collaborators]': '*',
-        'populate[tasks][populate][subtasks]': '*',
-        'populate[clientAccount]': '*',
-      } : {};
+      const params = projectPopulateParams(options);
       return await strapiClient.get(`/projects/${id}`, params);
     } catch (error) {
       console.error(`Error fetching project ${id}:`, error);
@@ -56,21 +84,13 @@ class ProjectService {
     }
   }
 
-  async getProjectBySlug(slug, populate = true) {
+  async getProjectBySlug(slug, options = true) {
     try {
       const params = {
         'filters[slug][$eq]': slug,
         'pagination[pageSize]': 1,
+        ...projectPopulateParams(options),
       };
-      if (populate) {
-        params['populate[projectManager]'] = '*';
-        params['populate[teamMembers]'] = '*';
-        params['populate[tasks][populate][assignee]'] = '*';
-        params['populate[tasks][populate][assigner]'] = '*';
-        params['populate[tasks][populate][collaborators]'] = '*';
-        params['populate[tasks][populate][subtasks]'] = '*';
-        params['populate[clientAccount]'] = '*';
-      }
       const response = await strapiClient.get('/projects', params);
       const items = response?.data || [];
       if (items.length === 0) throw new Error('Project not found');

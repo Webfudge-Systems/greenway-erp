@@ -4,11 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  Card,
   Avatar,
-  Button,
   EmptyState,
-  LoadingSpinner,
   ownerDisplayFromUser,
 } from '@greenways/ui'
 import {
@@ -21,6 +18,10 @@ import {
   Plus,
 } from 'lucide-react'
 import { fetchPmActivityFeed } from '../../lib/api/pmInboxService'
+import DashboardPanelShell, {
+  DashboardCountBadge,
+  DashboardPanelFooterLink,
+} from './DashboardPanelShell'
 
 const AVATAR_PALETTES = [
   'bg-orange-500',
@@ -109,7 +110,11 @@ function normalizeRow(row) {
   }
 }
 
-export default function DashboardActivityFeedWidget({ className = '', limit = 8 }) {
+export default function DashboardActivityFeedWidget({
+  className = '',
+  limit = 20,
+  departmentRevision = 0,
+}) {
   const router = useRouter()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -131,35 +136,35 @@ export default function DashboardActivityFeedWidget({ className = '', limit = 8 
     load()
     const interval = setInterval(load, 60000)
     return () => clearInterval(interval)
-  }, [load])
+  }, [load, departmentRevision])
 
   const rows = useMemo(() => items.map(normalizeRow), [items])
 
   return (
-    <Card glass className={`flex flex-col ${className}`}>
-      <div className="mb-5 flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900">Activity Feed</h2>
-          <p className="mt-0.5 text-sm text-gray-500">Recent project and task activity in your org</p>
+    <DashboardPanelShell
+      title="Team Updates"
+      subtitle="Recent task and project activity in your department"
+      badge={!loading && rows.length > 0 ? <DashboardCountBadge>{rows.length}</DashboardCountBadge> : null}
+      actionLabel="View all"
+      onAction={() => router.push('/inbox')}
+      loading={loading}
+      loadingMessage="Loading updates…"
+      className={className}
+      footer={
+        <DashboardPanelFooterLink label="Open inbox" onClick={() => router.push('/inbox')} />
+      }
+    >
+      {rows.length === 0 ? (
+        <div className="flex flex-1 flex-col items-center justify-center px-6 py-10 text-center">
+          <EmptyState
+            icon={Activity}
+            title="No updates yet"
+            description="Task and project changes from your team will appear here."
+            className="py-0"
+          />
         </div>
-        <Button variant="ghost" size="sm" onClick={() => router.push('/inbox')} className="shrink-0">
-          View All
-        </Button>
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center py-14">
-          <LoadingSpinner size="md" message="Loading activity…" />
-        </div>
-      ) : rows.length === 0 ? (
-        <EmptyState
-          icon={Activity}
-          title="No activity yet"
-          description="Updates to projects and tasks will show up here."
-          className="py-10"
-        />
       ) : (
-        <ul className="divide-y divide-gray-100 rounded-xl border border-gray-200 bg-white/90">
+        <ul className="min-h-0 flex-1 divide-y divide-gray-100 overflow-y-auto overscroll-contain">
           {rows.map((row) => {
             const { Icon, iconClass } = row
             const palette = avatarPalette(row.actor?.id)
@@ -176,17 +181,21 @@ export default function DashboardActivityFeedWidget({ className = '', limit = 8 
                   className={`shrink-0 text-white ${palette}`}
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm text-gray-900">
+                  <p className="truncate text-sm text-gray-900">
                     <span className="font-semibold">{row.actorName}</span>{' '}
                     <span className="font-normal text-gray-700">{row.verb}</span>
                   </p>
-                  <p className="mt-0.5 truncate text-sm text-gray-500">{row.entityName}</p>
+                  <p className="mt-0.5 truncate text-xs text-gray-500" title={row.entityName}>
+                    {row.entityName}
+                  </p>
                 </div>
-                <span className="shrink-0 text-xs font-medium tabular-nums text-gray-400">
-                  {timeAgo(row.createdAt)}
-                </span>
-                <div className={`flex h-8 w-8 shrink-0 items-center justify-center ${iconClass}`}>
-                  <Icon className="h-4 w-4" aria-hidden />
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <span className="text-[11px] font-medium tabular-nums text-gray-400">
+                    {timeAgo(row.createdAt)}
+                  </span>
+                  <div className={`flex h-6 w-6 items-center justify-center rounded-md bg-gray-50 ${iconClass}`}>
+                    <Icon className="h-3 w-3" aria-hidden />
+                  </div>
                 </div>
               </>
             )
@@ -196,18 +205,18 @@ export default function DashboardActivityFeedWidget({ className = '', limit = 8 
                 {row.href ? (
                   <Link
                     href={row.href}
-                    className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-gray-50/90"
+                    className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-orange-50/50"
                   >
                     {inner}
                   </Link>
                 ) : (
-                  <div className="flex items-center gap-3 px-4 py-3.5">{inner}</div>
+                  <div className="flex items-center gap-3 px-4 py-3">{inner}</div>
                 )}
               </li>
             )
           })}
         </ul>
       )}
-    </Card>
+    </DashboardPanelShell>
   )
 }

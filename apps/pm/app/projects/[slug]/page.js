@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@greenways/auth';
@@ -71,8 +71,9 @@ import {
   canCreateSubtaskOnTask,
   getPmOrgRoleKind,
 } from '../../../lib/pmOrgRoles';
-import { mergeTasksById } from '../../../lib/taskListUtils';
+import { mergeTasksByIdForProject, filterTasksForProject } from '../../../lib/taskListUtils';
 import { entityChatMediaProps, entityFilesPanelProps } from '../../../lib/entityMedia';
+import { usePmDepartmentRevision } from '../../../context/PmDepartmentContext';
 
 const DETAIL_TABS = [
   { key: 'overview', label: 'Overview' },
@@ -215,52 +216,96 @@ export default function ProjectDetailPage() {
   const [crmTimelineLoading, setCrmTimelineLoading] = useState(false);
   const [crmTimelineError, setCrmTimelineError] = useState(null);
   const [crmTimelineTotal, setCrmTimelineTotal] = useState(0);
+  const [tasksLoadError, setTasksLoadError] = useState(null);
+  const loadTasksRequestIdRef = useRef(0);
+  const loadProjectRequestIdRef = useRef(0);
+  const taskRefreshTimerRef = useRef(null);
+  const departmentRevision = usePmDepartmentRevision();
 
-  const loadProject = useCallback(async () => {
-    if (!slug) return;
-    try {
-      setLoading(true);
-      let res;
-      if (/^\d+$/.test(String(slug))) {
-        res = await projectService.getProjectById(slug);
-      } else {
-        res = await projectService.getProjectBySlug(slug);
+  const loadTasksForProject = useCallback(
+    async (projectId, { silent = false, mergeWithPrevious = false } = {}) => {
+      const pid = Number(projectId);
+      if (Number.isNaN(pid)) return;
+      const requestId = ++loadTasksRequestIdRef.current;
+      try {
+        if (!silent) setTasksLoading(true);
+        setTasksLoadError(null);
+        const rawList = await taskService.fetchAllTasksByProject(pid, {
+          pageSize: 500,
+          sort: 'updatedAt:desc',
+        });
+        if (requestId !== loadTasksRequestIdRef.current) return;
+        const list = rawList.map(transformTask).filter(Boolean);
+        if (mergeWithPrevious) {
+          setTasks((prev) => mergeTasksByIdForProject(list, prev, pid));
+        } else {
+          setTasks(list);
+        }
+      } catch (error) {
+        console.error('Load project tasks error:', error);
+        if (requestId !== loadTasksRequestIdRef.current) return;
+        setTasksLoadError(error?.message || 'Could not load tasks for this project');
+        if (!silent) setTasks([]);
+      } finally {
+        if (requestId === loadTasksRequestIdRef.current) setTasksLoading(false);
       }
-      const transformed = transformProject(res?.data);
-      setProject(transformed);
-    } catch (error) {
-      console.error('Load project error:', error);
-      setProject(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [slug]);
+    },
+    [departmentRevision]
+  );
 
-  const loadTasks = useCallback(async ({ silent = false, mergeWithPrevious = false } = {}) => {
-    if (!project?.id) return;
-    const pid = Number(project.id);
-    if (Number.isNaN(pid)) return;
-    try {
-      if (!silent) setTasksLoading(true);
-      const rawList = await taskService.fetchAllTasksByProject(pid, { pageSize: 500, sort: 'updatedAt:desc' });
-      const list = rawList.map(transformTask).filter(Boolean);
-      if (mergeWithPrevious) {
-        setTasks((prev) => mergeTasksById(list, prev));
-      } else {
-        setTasks(list);
+  const loadTasks = useCallback(
+    (options = {}) => {
+      if (!project?.id) return Promise.resolve();
+      return loadTasksForProject(project.id, options);
+    },
+    [project?.id, loadTasksForProject]
+  );
+
+  const loadProject = useCallback(
+    async ({ silent = false } = {}) => {
+      if (!slug) return;
+      const requestId = ++loadProjectRequestIdRef.current;
+      try {
+        if (!silent) setLoading(true);
+        let res;
+        if (/^\d+$/.test(String(slug))) {
+          res = await projectService.getProjectById(slug);
+        } else {
+          res = await projectService.getProjectBySlug(slug);
+        }
+        if (requestId !== loadProjectRequestIdRef.current) return;
+        const transformed = transformProject(res?.data);
+        setProject(transformed);
+        if (transformed?.id) {
+          setTasksLoading(true);
+          void loadTasksForProject(transformed.id, { silent: true });
+        }
+      } catch (error) {
+        console.error('Load project error:', error);
+        if (requestId !== loadProjectRequestIdRef.current) return;
+        setProject(null);
+      } finally {
+        if (requestId === loadProjectRequestIdRef.current && !silent) setLoading(false);
       }
-    } catch (error) {
-      console.error('Load project tasks error:', error);
-      if (!silent) setTasks([]);
-    } finally {
-      if (!silent) setTasksLoading(false);
-    }
-  }, [project?.id]);
+    },
+    [slug, loadTasksForProject]
+  );
+
+  const scheduleTaskRefresh = useCallback(() => {
+    if (taskRefreshTimerRef.current) clearTimeout(taskRefreshTimerRef.current);
+    taskRefreshTimerRef.current = setTimeout(() => {
+      taskRefreshTimerRef.current = null;
+      loadTasks({ silent: true, mergeWithPrevious: true });
+    }, 700);
+  }, [loadTasks]);
 
   const refreshTasksAndProject = useCallback(async () => {
-    await loadTasks();
-    await loadProject();
-  }, [loadTasks, loadProject]);
+    if (!project?.id) return;
+    await Promise.all([
+      loadProject({ silent: true }),
+      loadTasksForProject(project.id, { silent: false }),
+    ]);
+  }, [project?.id, loadProject, loadTasksForProject]);
 
   const loadUsers = useCallback(async () => {
     try {
@@ -285,6 +330,19 @@ export default function ProjectDetailPage() {
   }, []);
 
   useEffect(() => {
+    if (taskRefreshTimerRef.current) {
+      clearTimeout(taskRefreshTimerRef.current);
+      taskRefreshTimerRef.current = null;
+    }
+    setProject(null);
+    setLoading(true);
+    setTasks([]);
+    setTasksLoading(false);
+    setTasksLoadError(null);
+    setTaskModal({ open: false, task: null, parentContext: null });
+  }, [slug]);
+
+  useEffect(() => {
     loadProject();
   }, [loadProject]);
 
@@ -296,30 +354,47 @@ export default function ProjectDetailPage() {
     loadClients();
   }, [loadClients]);
 
+  const skipDeptTaskReloadRef = useRef(true);
   useEffect(() => {
-    loadTasks();
-  }, [loadTasks]);
+    if (skipDeptTaskReloadRef.current) {
+      skipDeptTaskReloadRef.current = false;
+      return;
+    }
+    if (project?.id) loadTasksForProject(project.id, { silent: true });
+  }, [departmentRevision, project?.id, loadTasksForProject]);
+
+  useEffect(() => {
+    return () => {
+      if (taskRefreshTimerRef.current) clearTimeout(taskRefreshTimerRef.current);
+    };
+  }, []);
+
+  const projectTasks = useMemo(
+    () => filterTasksForProject(tasks, project?.id),
+    [tasks, project?.id]
+  );
 
   const taskStats = useMemo(() => {
     if (!project) return { total: 0, completed: 0, progress: 0 };
-    const total = tasks.length > 0 ? tasks.length : project.totalTasks ?? 0;
+    const scoped = projectTasks;
+    const total = scoped.length > 0 ? scoped.length : project.totalTasks ?? 0;
     const completed =
-      tasks.length > 0
-        ? tasks.filter((t) => t.strapiStatus === 'COMPLETED').length
+      scoped.length > 0
+        ? scoped.filter((t) => t.strapiStatus === 'COMPLETED').length
         : project.completedTasks ?? 0;
     const progress = total > 0 ? Math.round((completed / total) * 100) : project.progress ?? 0;
     return { total, completed, progress };
-  }, [tasks, project]);
+  }, [projectTasks, project]);
 
   /** Task assignee picker: project team only (keeps existing assignees when editing). */
   const projectTaskUsers = useMemo(() => {
     if (!project) return users;
-    const extraFromTasks = collectTaskAssigneeUsers(tasks);
+    const extraFromTasks = collectTaskAssigneeUsers(projectTasks);
     const extraFromModal = taskModal.task?.assignees || [];
     return usersForProjectTaskAssignment(project, users, {
       extraUsers: [...extraFromTasks, ...extraFromModal],
     });
-  }, [project, users, tasks, taskModal.task]);
+  }, [project, users, projectTasks, taskModal.task]);
 
   const reloadProjectTimeline = useCallback(
     async (opts = {}) => {
@@ -365,14 +440,14 @@ export default function ProjectDetailPage() {
         ...tab,
         badge:
           tab.key === 'tasks'
-            ? tasks.length
+            ? projectTasks.length
             : tab.key === 'files'
               ? fileCount || undefined
               : tab.key === 'activity'
                 ? activityCount || undefined
                 : undefined,
       })),
-    [tasks.length, activityCount, fileCount]
+    [projectTasks.length, activityCount, fileCount]
   );
 
   const handleAddProjectComment = useCallback(
@@ -487,9 +562,10 @@ export default function ProjectDetailPage() {
 
   const saveTask = async (payload) => {
     if (!project) return;
+    const projectId = project.id;
     try {
       setSaving(true);
-      const nextPayload = { ...payload, projectId: payload.projectId || project.id };
+      const nextPayload = { ...payload, projectId: payload.projectId || projectId };
       let savedTask = null;
       if (taskModal.task) {
         const res = await taskService.updateTask(taskModal.task.id, nextPayload);
@@ -500,12 +576,13 @@ export default function ProjectDetailPage() {
       }
       setTaskModal({ open: false, task: null, parentContext: null });
       if (savedTask?.id) {
-        setTasks((prev) => mergeTasksById([savedTask], prev));
+        setTasks((prev) => mergeTasksByIdForProject([savedTask], prev, projectId));
       }
-      await loadTasks({ silent: true, mergeWithPrevious: true });
-      await loadProject();
+      scheduleTaskRefresh();
+      void loadProject({ silent: true });
     } catch (error) {
       console.error('Save task error:', error);
+      setTasksLoadError(error?.message || 'Could not save task. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -631,7 +708,7 @@ export default function ProjectDetailPage() {
                   ]
                   : []),
                 { label: 'Copy link', icon: Copy, onClick: copyProjectLink },
-                { label: 'Refresh', icon: RefreshCw, onClick: () => { loadProject(); loadTasks(); } },
+                { label: 'Refresh', icon: RefreshCw, onClick: () => { refreshTasksAndProject(); } },
               ]}
               label="More project actions"
             />
@@ -993,8 +1070,17 @@ export default function ProjectDetailPage() {
       ) : null}
 
       {activeTab === 'tasks' ? (
-        <ProjectTasksPanel
-          tasks={tasks}
+        <div className="space-y-3">
+          {tasksLoadError ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              <p>{tasksLoadError}</p>
+              <Button variant="outline" size="sm" onClick={() => loadTasks()}>
+                Retry
+              </Button>
+            </div>
+          ) : null}
+          <ProjectTasksPanel
+            tasks={projectTasks}
           tasksLoading={tasksLoading}
           users={projectTaskUsers}
           onRefresh={refreshTasksAndProject}
@@ -1018,6 +1104,7 @@ export default function ProjectDetailPage() {
           canAddSubtaskOnTask={(row) => canCreateSubtaskOnTask(row, currentUserId)}
           canApproveAssignments={canApproveAssignments}
         />
+        </div>
       ) : null}
 
       {activeTab === 'activity' ? (

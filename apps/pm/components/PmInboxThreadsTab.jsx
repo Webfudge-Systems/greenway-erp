@@ -14,6 +14,7 @@ import {
 import { Avatar, Badge, Button, Card, ChatMessageText, EmptyState, Input, LoadingSpinner, MentionComposer } from '@greenways/ui'
 import { fetchChatMentionUsers } from '../lib/api/chatMentionUsers'
 import { fetchPmThreadsCommentsFeed } from '../lib/api/pmInboxService'
+import { usePmDepartmentRevision } from '../context/PmDepartmentContext'
 import { fetchProjectComments, addProjectComment } from '../lib/api/projectActivityService'
 import { fetchTaskComments, addTaskComment } from '../lib/api/taskActivityService'
 
@@ -189,6 +190,7 @@ function ThreadListItem({ thread, active, onClick }) {
 }
 
 export default function PmInboxThreadsTab() {
+  const departmentRevision = usePmDepartmentRevision()
   const [allComments, setAllComments] = useState([])
   const [listLoading, setListLoading] = useState(true)
   const [listError, setListError] = useState(null)
@@ -231,7 +233,7 @@ export default function PmInboxThreadsTab() {
       setListLoading(false)
       setRefreshing(false)
     }
-  }, [])
+  }, [departmentRevision])
 
   useEffect(() => {
     loadThreadList()

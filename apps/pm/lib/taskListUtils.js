@@ -96,6 +96,32 @@ export function mergeTasksById(apiTasks, previousTasks) {
   return [...byId.values()];
 }
 
+/** Whether a transformed task row belongs to the given project id. */
+export function taskBelongsToProject(task, projectId) {
+  if (!task || projectId == null || projectId === '') return false;
+  const pid = Number(projectId);
+  if (Number.isNaN(pid)) return false;
+  if (task.projectId != null && Number(task.projectId) === pid) return true;
+  const rawProjects = task.projects;
+  if (Array.isArray(rawProjects)) {
+    return rawProjects.some((p) => {
+      const id = typeof p === 'object' && p != null ? p.id : p;
+      return id != null && Number(id) === pid;
+    });
+  }
+  return false;
+}
+
+export function filterTasksForProject(tasks, projectId) {
+  if (projectId == null || projectId === '') return tasks || [];
+  return (tasks || []).filter((task) => taskBelongsToProject(task, projectId));
+}
+
+/** Merge API tasks with prior rows scoped to one project (avoids cross-project bleed on navigation). */
+export function mergeTasksByIdForProject(apiTasks, previousTasks, projectId) {
+  return mergeTasksById(apiTasks, filterTasksForProject(previousTasks, projectId));
+}
+
 export function buildChildrenByParentId(tasks, { excludeTaskIds } = {}) {
   const exclude =
     excludeTaskIds instanceof Set ? excludeTaskIds : new Set(excludeTaskIds || []);

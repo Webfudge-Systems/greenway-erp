@@ -10,6 +10,7 @@ import {
   DashboardPageSkeleton,
   DashboardMyTasksWidget,
   UpcomingDeadlinesWidget,
+  DashboardActivityFeedWidget,
   TaskOverviewWidget,
   TeamWorkloadWidget,
   ProjectsOverviewWidget,
@@ -240,22 +241,37 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* My Tasks (wide) | Upcoming Deadlines — equal fixed height */}
-      <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-5 lg:items-stretch">
-        <div className={`lg:col-span-3 ${DASHBOARD_MAIN_ROW_CLASS}`}>
+      {/* My Tasks | Upcoming Deadlines | Team Updates — equal columns, shared height */}
+      <div className="mb-6 grid grid-cols-1 gap-5 xl:grid-cols-3 xl:items-stretch">
+        <div className={DASHBOARD_MAIN_ROW_CLASS}>
           <DashboardMyTasksWidget
             tasks={openAssigneeTasks}
             totalCount={openAssigneeTasks.length}
             loading={false}
-            className="w-full"
+            className="h-full w-full"
           />
         </div>
 
         {canViewTasks ? (
-          <div className={`lg:col-span-2 ${DASHBOARD_MAIN_ROW_CLASS}`}>
-            <UpcomingDeadlinesWidget tasks={assigneeTasks} loading={false} className="w-full" />
+          <>
+            <div className={DASHBOARD_MAIN_ROW_CLASS}>
+              <UpcomingDeadlinesWidget tasks={assigneeTasks} loading={false} className="h-full w-full" />
+            </div>
+            <div className={DASHBOARD_MAIN_ROW_CLASS}>
+              <DashboardActivityFeedWidget
+                className="h-full w-full"
+                departmentRevision={departmentRevision}
+              />
+            </div>
+          </>
+        ) : (
+          <div className={`xl:col-span-2 ${DASHBOARD_MAIN_ROW_CLASS}`}>
+            <DashboardActivityFeedWidget
+              className="h-full w-full"
+              departmentRevision={departmentRevision}
+            />
           </div>
-        ) : null}
+        )}
       </div>
 
       {/* Task overview, team workload, projects overview — content-sized, no min-height stretch */}

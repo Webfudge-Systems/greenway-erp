@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Card, Button, EmptyState, LoadingSpinner } from '@greenways/ui'
+import { EmptyState } from '@greenways/ui'
 import { Calendar, ChevronLeft, ChevronRight, CheckSquare } from 'lucide-react'
+import DashboardPanelShell, { DashboardPanelFooterLink } from './DashboardPanelShell'
 
 const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 const DEADLINE_LIMIT = 3
@@ -103,90 +104,84 @@ export default function UpcomingDeadlinesWidget({ tasks = [], loading = false, c
   }
 
   return (
-    <Card glass className={`flex h-full min-h-0 flex-col ${className}`}>
-      <div className="mb-3 flex shrink-0 items-start justify-between gap-2">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900">Upcoming Deadlines</h2>
-          <p className="mt-0.5 text-xs text-gray-500">Next {DEADLINE_LIMIT} open due dates</p>
-        </div>
-        <Button variant="ghost" size="sm" onClick={() => router.push('/calendar')} className="shrink-0 text-xs">
-          View Calendar
-        </Button>
-      </div>
-
-      {loading ? (
-        <div className="flex flex-1 items-center justify-center py-8">
-          <LoadingSpinner size="md" message="Loading deadlines…" />
-        </div>
-      ) : (
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-          {/* Deadlines — grows to ~45% of panel */}
-          <div className="flex min-h-0 flex-[1] flex-col divide-y divide-gray-100">
-            {upcoming.length === 0 ? (
-              <div className="flex flex-1 items-center justify-center p-4">
-                <EmptyState
-                  icon={CheckSquare}
-                  title="No upcoming deadlines"
-                  description="Tasks with due dates will appear here."
-                  className="py-4"
-                />
-              </div>
-            ) : (
-              deadlineSlots.map((slot, index) => {
-                if (slot.type === 'empty') {
-                  return (
-                    <div
-                      key={`deadline-empty-${index}`}
-                      className="flex flex-1 items-center justify-center bg-gray-50/40 px-3"
-                      style={{ minHeight: DEADLINE_ROW_MIN_H }}
-                      aria-hidden
-                    />
-                  )
-                }
-
-                const task = slot.task
-                const due = new Date(task.dueDate)
-                const month = due.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()
-                const day = due.getDate()
-                const urgent = task.daysLeft <= 2
-
+    <DashboardPanelShell
+      title="Upcoming Deadlines"
+      subtitle={`Next ${DEADLINE_LIMIT} open due dates`}
+      actionLabel="View calendar"
+      onAction={() => router.push('/calendar')}
+      loading={loading}
+      loadingMessage="Loading deadlines…"
+      className={className}
+      footer={
+        <DashboardPanelFooterLink label="Open calendar" onClick={() => router.push('/calendar')} />
+      }
+    >
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="flex min-h-0 flex-[1] flex-col divide-y divide-gray-100">
+          {upcoming.length === 0 ? (
+            <div className="flex flex-1 items-center justify-center px-4 py-8">
+              <EmptyState
+                icon={CheckSquare}
+                title="No upcoming deadlines"
+                description="Tasks with due dates will appear here."
+                className="py-0"
+              />
+            </div>
+          ) : (
+            deadlineSlots.map((slot, index) => {
+              if (slot.type === 'empty') {
                 return (
-                  <button
-                    key={task.id}
-                    type="button"
-                    onClick={() => router.push(`/tasks/${task.id}`)}
-                    className="flex flex-1 w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-orange-50/40"
+                  <div
+                    key={`deadline-empty-${index}`}
+                    className="flex flex-1 items-center justify-center bg-gray-50/40 px-3"
                     style={{ minHeight: DEADLINE_ROW_MIN_H }}
-                  >
-                    <div className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg border border-gray-200 bg-gray-50">
-                      <span className="text-[9px] font-bold uppercase tracking-wide text-red-600">
-                        {month}
-                      </span>
-                      <span className="text-sm font-bold leading-none text-gray-900">{day}</span>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="line-clamp-2 text-sm font-semibold leading-snug text-gray-900">
-                        {task.name}
-                      </p>
-                      <p className="mt-0.5 truncate text-xs text-gray-500">
-                        {task.project || 'No project'}
-                      </p>
-                    </div>
-                    <span
-                      className={`shrink-0 text-xs font-semibold tabular-nums ${
-                        urgent ? 'text-red-600' : 'text-gray-500'
-                      }`}
-                    >
-                      {formatDaysLeft(task.daysLeft)}
-                    </span>
-                  </button>
+                    aria-hidden
+                  />
                 )
-              })
-            )}
-          </div>
+              }
 
-          {/* Mini calendar — fills remaining height */}
-          <div className="flex min-h-0 flex-[1.15] flex-col border-t border-gray-100 bg-gradient-to-b from-orange-50/50 to-white px-3 pb-3 pt-2.5">
+              const task = slot.task
+              const due = new Date(task.dueDate)
+              const month = due.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()
+              const day = due.getDate()
+              const urgent = task.daysLeft <= 2
+
+              return (
+                <button
+                  key={task.id}
+                  type="button"
+                  onClick={() => router.push(`/tasks/${task.id}`)}
+                  className="flex w-full flex-1 items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-orange-50/40"
+                  style={{ minHeight: DEADLINE_ROW_MIN_H }}
+                >
+                  <div className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg border border-gray-200 bg-gray-50">
+                    <span className="text-[9px] font-bold uppercase tracking-wide text-red-600">
+                      {month}
+                    </span>
+                    <span className="text-sm font-bold leading-none text-gray-900">{day}</span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="line-clamp-2 text-sm font-semibold leading-snug text-gray-900">
+                      {task.name}
+                    </p>
+                    <p className="mt-0.5 truncate text-xs text-gray-500">
+                      {task.project || 'No project'}
+                    </p>
+                  </div>
+                  <span
+                    className={`shrink-0 text-xs font-semibold tabular-nums ${
+                      urgent ? 'text-red-600' : 'text-gray-500'
+                    }`}
+                  >
+                    {formatDaysLeft(task.daysLeft)}
+                  </span>
+                </button>
+              )
+            })
+          )}
+        </div>
+
+        <div className="flex min-h-0 flex-[1.15] flex-col border-t border-gray-100 bg-gradient-to-b from-orange-50/50 to-white px-3 pb-3 pt-2.5">
             <div className="mb-1.5 flex items-center justify-between gap-2">
               <button
                 type="button"
@@ -276,7 +271,6 @@ export default function UpcomingDeadlinesWidget({ tasks = [], loading = false, c
             </div>
           </div>
         </div>
-      )}
-    </Card>
+    </DashboardPanelShell>
   )
 }

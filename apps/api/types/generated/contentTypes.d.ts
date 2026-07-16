@@ -670,6 +670,10 @@ export interface ApiCrmActivityCrmActivity extends Struct.CollectionTypeSchema {
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    department: Schema.Attribute.Relation<
+      'manyToOne',
+      'api::department.department'
+    >;
     leadCompany: Schema.Attribute.Relation<
       'manyToOne',
       'api::lead-company.lead-company'

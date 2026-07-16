@@ -99,12 +99,12 @@ const TASK_VIEW_STORAGE_KEY = 'pm.myTasks.taskView';
 
 /** Default pixel widths for resizable table columns (keyed by column `key`). */
 const DEFAULT_COLUMN_WIDTHS = {
-  name: 300,
+  name: 380,
   project: 168,
   status: 170,
   priority: 140,
-  assigner: 140,
-  assignees: 130,
+  assigner: 120,
+  assignees: 100,
   startDate: 120,
   dueDate: 120,
   tags: 140,
@@ -801,7 +801,7 @@ export default function MyTasksPage() {
       {
         key: 'name',
         label: 'TASK NAME',
-        defaultWidth: '300px',
+        defaultWidth: '380px',
         className: 'align-top',
         render: (_, row) => {
           const initial = (row.name || 'T').trim().charAt(0).toUpperCase() || 'T';
@@ -940,7 +940,7 @@ export default function MyTasksPage() {
         const empty = !label;
         return (
           <div
-            className="flex min-w-[180px] max-w-[min(280px,22vw)] items-center gap-2.5 py-0.5"
+            className="flex min-w-0 max-w-[120px] items-center gap-2 py-0.5"
             onClick={(event) => event.stopPropagation()}
             title={label || 'No assigner'}
           >
@@ -963,7 +963,7 @@ export default function MyTasksPage() {
       visibilityKey: 'assignees',
       label: 'ASSIGNEES',
       render: (_, row) => (
-        <div className="min-w-[120px] py-0.5" onClick={(event) => event.stopPropagation()}>
+        <div className="min-w-0 py-0.5" onClick={(event) => event.stopPropagation()}>
           <TaskAssigneesPicker
             userIds={row.assigneeUserIds || []}
             assignees={row.assignees}

@@ -211,6 +211,27 @@ function resolveNumericEntityId(entity) {
   return null;
 }
 
+function departmentIdFromPmEntity(subjectType, entity) {
+  if (!entity || (subjectType !== 'task' && subjectType !== 'project')) return null;
+  const direct = entity.department;
+  if (direct != null && direct !== '') {
+    const id = typeof direct === 'object' ? direct.id : Number(direct);
+    return id && !Number.isNaN(id) ? id : null;
+  }
+  if (subjectType === 'task') {
+    const projects = entity.projects;
+    const list = Array.isArray(projects) ? projects : projects != null ? [projects] : [];
+    for (const project of list) {
+      if (!project || typeof project !== 'object') continue;
+      const pd = project.department;
+      if (pd == null || pd === '') continue;
+      const id = typeof pd === 'object' ? pd.id : Number(pd);
+      if (id && !Number.isNaN(id)) return id;
+    }
+  }
+  return null;
+}
+
 /**
  * Persist a CRM timeline row. Failures are swallowed so mutations still succeed.
  */
@@ -225,6 +246,7 @@ async function logCrmActivity(strapi, params) {
     previousEntity,
     patch,
     subjectId: subjectIdOverride,
+    departmentId: departmentIdParam,
   } = params;
   if (!organizationId || !subjectType || !entity) return;
 
@@ -261,6 +283,13 @@ async function logCrmActivity(strapi, params) {
     leadCompany: lcId,
     summary,
   };
+  const departmentId =
+    departmentIdParam != null && departmentIdParam !== ''
+      ? Number(departmentIdParam)
+      : departmentIdFromPmEntity(subjectType, entity);
+  if (departmentId && !Number.isNaN(departmentId)) {
+    row.department = departmentId;
+  }
   if (action === 'update' && (fieldChanges.length > 0 || changedKeys?.length)) {
     row.meta = {
       changedFields: changedKeys,
@@ -471,4 +500,5 @@ module.exports = {
   contactLabel,
   leadCompanyLabel,
   dealLabel,
+  departmentIdFromPmEntity,
 };

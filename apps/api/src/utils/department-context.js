@@ -101,6 +101,67 @@ function mergeDepartmentScopeFilter(filters, departmentId) {
 }
 
 /**
+ * Task + project subject ids visible in a PM department feed.
+ * Tasks match when task.department matches or any linked project is in the department.
+ */
+async function pmSubjectIdsForDepartment(strapi, orgId, departmentId) {
+  const PROJECT_UID = 'api::project.project';
+  const TASK_UID = 'api::task.task';
+  if (!orgId || !departmentId) return { projectIds: [], taskIds: [] };
+
+  const projectRows = await strapi.entityService.findMany(PROJECT_UID, {
+    filters: { organization: orgId, department: departmentId },
+    fields: ['id'],
+    limit: 5000,
+  });
+  const projectIds = (projectRows || []).map((r) => r.id).filter((id) => id != null);
+
+  const taskOr = [{ department: departmentId }];
+  if (projectIds.length) {
+    taskOr.push({ projects: { id: { $in: projectIds } } });
+  }
+
+  const taskRows = await strapi.entityService.findMany(TASK_UID, {
+    filters: { organization: orgId, $or: taskOr },
+    fields: ['id'],
+    limit: 5000,
+  });
+  const taskIds = (taskRows || []).map((r) => r.id).filter((id) => id != null);
+
+  return { projectIds, taskIds };
+}
+
+/**
+ * Build $or filters for CRM activity feed rows scoped to a PM department.
+ */
+function pmActivityDepartmentFeedOr({ departmentId, projectIds, taskIds, subjectTypes = [] }) {
+  const allowProject = !subjectTypes.length || subjectTypes.includes('project');
+  const allowTask = !subjectTypes.length || subjectTypes.includes('task');
+  const or = [];
+
+  if (departmentId) {
+    or.push({ department: departmentId });
+  }
+
+  if (allowProject && projectIds.length) {
+    or.push({
+      department: { $null: true },
+      subjectType: 'project',
+      subjectId: { $in: projectIds },
+    });
+  }
+  if (allowTask && taskIds.length) {
+    or.push({
+      department: { $null: true },
+      subjectType: 'task',
+      subjectId: { $in: taskIds },
+    });
+  }
+
+  return or;
+}
+
+/**
  * Resolve whether the user may use this department in the active org.
  */
 async function resolveDepartmentContext(strapi, ctx) {
@@ -152,6 +213,8 @@ module.exports = {
   departmentsPayload,
   mergeDepartmentScopeFilter,
   normalizeIdList,
+  pmActivityDepartmentFeedOr,
+  pmSubjectIdsForDepartment,
   primaryDepartmentIdFromMembership,
   resolveDepartmentContext,
   validateDepartmentsInOrg,

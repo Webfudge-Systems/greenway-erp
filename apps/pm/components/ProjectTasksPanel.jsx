@@ -20,22 +20,33 @@ import {
   Textarea,
   ChatMessageText,
   ownerDisplayFromUser,
+  ViewToggleGroup,
+  ViewToggleButton,
 } from '@greenways/ui';
 import {
   CheckSquare,
   Copy,
   Edit3,
   Eye,
+  GanttChart,
+  Kanban,
+  LayoutList,
   Link2,
   MessageSquarePlus,
   Pencil,
   Plus,
   SendHorizontal,
+  Table2,
   Trash2,
 } from 'lucide-react';
 import PMRowActions from './PMRowActions';
 import { TaskSubtasksAfterRow, TaskSubtasksToggleButton } from './TaskSubtasksTableExtras';
 import TaskAssigneesPicker from './TaskAssigneesPicker';
+import {
+  MyTasksKanbanBoard,
+  MyTasksListByStatus,
+  MyTasksTimelineView,
+} from './MyTasksViews';
 import { pmTableSelectFillProps, PRIORITY_OPTIONS } from './PMStatusBadge';
 import taskService from '../lib/api/taskService';
 import taskCommentService from '../lib/api/taskCommentService';
@@ -45,7 +56,20 @@ import { usePmTableSort } from '../hooks/usePmTableSort';
 import { TableSortDropdown as PmTableSortDropdown } from '@greenways/ui';
 
 const TABLE_SORT_STORAGE_KEY = 'pm.projectTasks.tableSort';
+const TASK_VIEW_STORAGE_KEY = 'pm.projectTasks.taskView';
 const TABLE_PAGE_SIZE = 12;
+const TASK_VIEW_MODES = ['list', 'table', 'kanban', 'timeline'];
+
+function readStoredTaskView() {
+  if (typeof window === 'undefined') return 'table';
+  try {
+    const v = window.localStorage.getItem(TASK_VIEW_STORAGE_KEY);
+    if (TASK_VIEW_MODES.includes(v)) return v;
+  } catch {
+    /* ignore */
+  }
+  return 'table';
+}
 
 const STATUS_TABS = [
   { id: 'all', label: 'All Tasks' },
@@ -163,6 +187,7 @@ export default function ProjectTasksPanel({
   const [commentError, setCommentError] = useState('');
   const [sortPickerOpen, setSortPickerOpen] = useState(false);
   const [tablePage, setTablePage] = useState(1);
+  const [taskViewMode, setTaskViewMode] = useState(() => readStoredTaskView());
   const toolbarRef = useRef(null);
 
   useEffect(() => {
@@ -326,7 +351,24 @@ export default function ProjectTasksPanel({
 
   useEffect(() => {
     setTablePage(1);
-  }, [activeTab, debouncedSearchQuery]);
+  }, [activeTab, debouncedSearchQuery, taskViewMode]);
+
+  const persistTaskView = useCallback((mode) => {
+    try {
+      window.localStorage.setItem(TASK_VIEW_STORAGE_KEY, mode);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const handleTaskViewChange = useCallback(
+    (mode) => {
+      setTaskViewMode(mode);
+      persistTaskView(mode);
+      if (mode !== 'table') setSortPickerOpen(false);
+    },
+    [persistTaskView]
+  );
 
   useEffect(() => {
     const maxPage = Math.max(1, Math.ceil(sortedTableRootTasks.length / TABLE_PAGE_SIZE));
@@ -384,8 +426,8 @@ export default function ProjectTasksPanel({
       {
         key: 'name',
         label: 'TASK NAME',
-        headerClassName: 'max-w-[14rem] sm:max-w-[17rem] lg:max-w-[20rem]',
-        className: 'max-w-[14rem] sm:max-w-[17rem] lg:max-w-[20rem] align-top',
+        width: '380px',
+        className: 'align-top',
         render: (_, row) => {
           const initial = (row.name || 'T').trim().charAt(0).toUpperCase() || 'T';
           const commentCount = Number(commentCountsByTaskId[String(row.id)] || 0);
@@ -477,6 +519,8 @@ export default function ProjectTasksPanel({
       {
         key: 'assigner',
         label: 'ASSIGNER',
+        width: '130px',
+        className: 'align-top',
         render: (_, row) => {
           const assignerUser = row.assigner || assignerStrapiShape(row, users);
           const derived = ownerDisplayFromUser(assignerUser);
@@ -484,7 +528,7 @@ export default function ProjectTasksPanel({
           const empty = !label;
           return (
             <div
-              className="flex min-w-[180px] max-w-[min(280px,22vw)] items-center gap-2.5 py-0.5"
+              className="flex min-w-0 max-w-[130px] items-center gap-2 py-0.5"
               onClick={(event) => event.stopPropagation()}
               title={label || 'No assigner'}
             >
@@ -505,8 +549,10 @@ export default function ProjectTasksPanel({
       {
         key: 'assignees',
         label: 'ASSIGNEES',
+        width: '100px',
+        className: 'align-top',
         render: (_, row) => (
-          <div className="min-w-[140px] py-0.5" onClick={(event) => event.stopPropagation()}>
+          <div className="min-w-0 py-0.5" onClick={(event) => event.stopPropagation()}>
             {row.assignmentPending ? (
               <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-amber-700">
                 Pending approval
@@ -654,6 +700,40 @@ export default function ProjectTasksPanel({
     : null;
   const taskComments = activeCommentTask?.id ? commentsByTask[activeCommentTask.id] : [];
 
+  const taskViewSwitcher = (
+    <ViewToggleGroup aria-label="Task layout">
+      <ViewToggleButton active={taskViewMode === 'list'} title="List (grouped by status)" onClick={() => handleTaskViewChange('list')}>
+        <LayoutList className="h-[18px] w-[18px]" strokeWidth={2} />
+      </ViewToggleButton>
+      <ViewToggleButton active={taskViewMode === 'table'} title="Table" onClick={() => handleTaskViewChange('table')}>
+        <Table2 className="h-[18px] w-[18px]" strokeWidth={2} />
+      </ViewToggleButton>
+      <ViewToggleButton active={taskViewMode === 'kanban'} title="Kanban" onClick={() => handleTaskViewChange('kanban')}>
+        <Kanban className="h-[18px] w-[18px]" strokeWidth={2} />
+      </ViewToggleButton>
+      <ViewToggleButton active={taskViewMode === 'timeline'} title="Timeline" onClick={() => handleTaskViewChange('timeline')}>
+        <GanttChart className="h-[18px] w-[18px]" strokeWidth={2} />
+      </ViewToggleButton>
+    </ViewToggleGroup>
+  );
+
+  const emptyTasksMessage =
+    searchQuery || activeTab !== 'all' ? 'Try adjusting filters or search' : 'Create the first task for this project';
+
+  const renderAlternateViewEmpty = () => (
+    <div className="p-12 text-center">
+      <CheckSquare className="mx-auto mb-3 h-12 w-12 text-gray-300" />
+      <h3 className="text-lg font-semibold text-gray-700">No tasks found</h3>
+      <p className="mt-2 text-sm text-gray-500">{emptyTasksMessage}</p>
+      {!searchQuery && activeTab === 'all' && canCreateProjectTasks ? (
+        <Button variant="primary" onClick={onAddTask} className="mt-4 gap-2">
+          <Plus className="h-4 w-4" aria-hidden />
+          Add Task
+        </Button>
+      ) : null}
+    </div>
+  );
+
   return (
     <div className="space-y-3">
       <div className="relative" ref={toolbarRef}>
@@ -661,6 +741,7 @@ export default function ProjectTasksPanel({
           tabs={tabsWithBadges}
           activeTab={activeTab}
           onTabChange={setActiveTab}
+          afterTabs={taskViewSwitcher}
           showSearch
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
@@ -668,14 +749,14 @@ export default function ProjectTasksPanel({
           showAdd={canCreateProjectTasks}
           onAddClick={onAddTask}
           addTitle="Add Task"
-          showSort
+          showSort={taskViewMode === 'table'}
           onSortClick={() => setSortPickerOpen((open) => !open)}
           hasActiveSort={hasActiveSort}
           sortTitle="Sort tasks (Shift+click headers for multi-sort)"
           variant="glass"
         />
         <PmTableSortDropdown
-          open={sortPickerOpen}
+          open={sortPickerOpen && taskViewMode === 'table'}
           sortRules={sortRules}
           columnOptions={sortColumnOptions}
           onAddRule={addSortRule}
@@ -694,7 +775,7 @@ export default function ProjectTasksPanel({
           <>
             Showing <span className="font-semibold text-gray-900">{totalTableRows}</span> result
             {totalTableRows !== 1 ? 's' : ''}
-            {totalTableRows > TABLE_PAGE_SIZE ? (
+            {taskViewMode === 'table' && totalTableRows > TABLE_PAGE_SIZE ? (
               <>
                 {' '}
                 (page {tablePage} of {totalTablePages})
@@ -704,12 +785,12 @@ export default function ProjectTasksPanel({
         )}
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
         {tasksLoading ? (
           <div className="p-12">
             <TableSkeleton rows={5} columns={8} />
           </div>
-        ) : (
+        ) : taskViewMode === 'table' ? (
           <>
             <Table
               columns={sortableTaskColumns}
@@ -741,9 +822,7 @@ export default function ProjectTasksPanel({
                   <CheckSquare className="mx-auto mb-3 h-12 w-12 opacity-50" />
                 </div>
                 <h3 className="mb-2 text-lg font-semibold text-gray-700">No tasks found</h3>
-                <p className="mb-4 text-sm text-gray-500">
-                  {searchQuery || activeTab !== 'all' ? 'Try adjusting filters or search' : 'Create the first task for this project'}
-                </p>
+                <p className="mb-4 text-sm text-gray-500">{emptyTasksMessage}</p>
                 {!searchQuery && activeTab === 'all' && canCreateProjectTasks && (
                   <Button variant="primary" onClick={onAddTask} className="gap-2">
                     <Plus className="mr-2 h-4 w-4" />
@@ -762,6 +841,34 @@ export default function ProjectTasksPanel({
               />
             ) : null}
           </>
+        ) : taskViewMode === 'list' ? (
+          tableRootTasks.length === 0 ? (
+            renderAlternateViewEmpty()
+          ) : (
+            <MyTasksListByStatus
+              tasks={tableRootTasks}
+              router={router}
+              updateTask={updateTask}
+              savingId={savingId}
+              hideProject
+            />
+          )
+        ) : taskViewMode === 'kanban' ? (
+          tableRootTasks.length === 0 ? (
+            renderAlternateViewEmpty()
+          ) : (
+            <MyTasksKanbanBoard
+              tasks={tableRootTasks}
+              router={router}
+              updateTask={updateTask}
+              activeTab={activeTab}
+              hideProject
+            />
+          )
+        ) : tableRootTasks.length === 0 ? (
+          renderAlternateViewEmpty()
+        ) : (
+          <MyTasksTimelineView tasks={tableRootTasks} router={router} />
         )}
       </div>
 

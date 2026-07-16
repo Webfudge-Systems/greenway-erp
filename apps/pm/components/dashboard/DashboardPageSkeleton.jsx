@@ -28,11 +28,14 @@ export default function DashboardPageSkeleton() {
 
       <KPICardsRowSkeleton count={4} />
 
-      <div className="grid h-[min(680px,72vh)] min-h-[600px] grid-cols-1 gap-6 lg:grid-cols-5 lg:items-stretch">
-        <div className="lg:col-span-3">
+      <div className="grid h-[min(680px,72vh)] min-h-[600px] grid-cols-1 gap-5 xl:grid-cols-3 xl:items-stretch">
+        <div>
           <TasksTableCardSkeleton />
         </div>
-        <div className="lg:col-span-2">
+        <div>
+          <WidgetCardSkeleton minHeight="h-full" />
+        </div>
+        <div>
           <WidgetCardSkeleton minHeight="h-full" />
         </div>
       </div>

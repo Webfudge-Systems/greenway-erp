@@ -1,6 +1,11 @@
 'use strict';
 
 const { createCoreController } = require('@strapi/strapi').factories;
+const {
+  pmActivityDepartmentFeedOr,
+  pmSubjectIdsForDepartment,
+} = require('../../../utils/department-context');
+const { departmentIdFromPmEntity } = require('../../../utils/crm-activity-log');
 
 const UID = 'api::crm-activity.crm-activity';
 const CONTACT_UID = 'api::contact.contact';
@@ -230,20 +235,44 @@ module.exports = createCoreController(UID, ({ strapi }) => ({
     const type = String(q.type || q['type'] || '').trim().toLowerCase();
     const subjectTypesRaw = String(q.subjectTypes || q['subjectTypes'] || '').trim();
 
+    const subjectTypes = subjectTypesRaw
+      ? subjectTypesRaw
+          .split(',')
+          .map((s) => s.trim().toLowerCase())
+          .filter(Boolean)
+      : [];
+
     const filters = { organization: ctx.state.orgId };
     if (type) {
       filters.action = type;
     }
-    if (subjectTypesRaw) {
-      const parts = subjectTypesRaw
-        .split(',')
-        .map((s) => s.trim().toLowerCase())
-        .filter(Boolean);
-      if (parts.length === 1) {
-        filters.subjectType = parts[0];
-      } else if (parts.length > 1) {
-        filters.subjectType = { $in: parts };
+
+    const pmSubjectTypes = subjectTypes.filter((st) => st === 'task' || st === 'project');
+    const isPmFeed =
+      subjectTypes.length > 0 &&
+      pmSubjectTypes.length === subjectTypes.length &&
+      pmSubjectTypes.length > 0;
+
+    if (ctx.state.departmentId && isPmFeed) {
+      const { projectIds, taskIds } = await pmSubjectIdsForDepartment(
+        strapi,
+        ctx.state.orgId,
+        ctx.state.departmentId
+      );
+      const scopeOr = pmActivityDepartmentFeedOr({
+        departmentId: ctx.state.departmentId,
+        projectIds,
+        taskIds,
+        subjectTypes: pmSubjectTypes,
+      });
+      if (!scopeOr.length) {
+        return { data: [], meta: { total: 0, start, limit } };
       }
+      filters.$or = scopeOr;
+    } else if (subjectTypes.length === 1) {
+      filters.subjectType = subjectTypes[0];
+    } else if (subjectTypes.length > 1) {
+      filters.subjectType = { $in: subjectTypes };
     }
 
     let total = 0;
@@ -429,7 +458,7 @@ module.exports = createCoreController(UID, ({ strapi }) => ({
       if (Number.isNaN(taskId)) return ctx.badRequest('Invalid taskId');
 
       const task = await strapi.entityService.findOne(TASK_UID, taskId, {
-        populate: ['organization'],
+        populate: ['organization', 'department', 'projects', 'projects.department'],
       });
       if (!task) return ctx.notFound('Task not found');
       if (orgIdFromRelation(task.organization) !== ctx.state.orgId) {
@@ -437,6 +466,8 @@ module.exports = createCoreController(UID, ({ strapi }) => ({
       }
 
       const taskName = (task.name || task.title || 'Task').trim() || 'Task';
+      const taskDepartmentId =
+        departmentIdFromPmEntity('task', task) ?? ctx.state.departmentId ?? null;
 
       const entry = await strapi.entityService.create(UID, {
         data: {
@@ -445,6 +476,7 @@ module.exports = createCoreController(UID, ({ strapi }) => ({
           action: 'comment',
           subjectType: 'task',
           subjectId: taskId,
+          ...(taskDepartmentId ? { department: taskDepartmentId } : {}),
           summary: `${actorName} commented on task "${taskName}"`,
           meta: { comment },
         },
@@ -460,7 +492,7 @@ module.exports = createCoreController(UID, ({ strapi }) => ({
       if (Number.isNaN(projectId)) return ctx.badRequest('Invalid projectId');
 
       const proj = await strapi.entityService.findOne(PROJECT_UID, projectId, {
-        populate: ['organization'],
+        populate: ['organization', 'department'],
       });
       if (!proj) return ctx.notFound('Project not found');
       if (orgIdFromRelation(proj.organization) !== ctx.state.orgId) {
@@ -468,6 +500,8 @@ module.exports = createCoreController(UID, ({ strapi }) => ({
       }
 
       const projectName = (proj.name || proj.title || 'Project').trim() || 'Project';
+      const projectDepartmentId =
+        departmentIdFromPmEntity('project', proj) ?? ctx.state.departmentId ?? null;
 
       const entry = await strapi.entityService.create(UID, {
         data: {
@@ -476,6 +510,7 @@ module.exports = createCoreController(UID, ({ strapi }) => ({
           action: 'comment',
           subjectType: 'project',
           subjectId: projectId,
+          ...(projectDepartmentId ? { department: projectDepartmentId } : {}),
           summary: `${actorName} commented on project "${projectName}"`,
           meta: { comment },
         },

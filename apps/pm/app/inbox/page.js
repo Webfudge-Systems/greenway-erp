@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@greenways/auth'
+import { useAuth, authService } from '@greenways/auth'
 import Link from 'next/link'
 import {
   Card,
@@ -34,6 +34,7 @@ import PMPageHeader from '../../components/PMPageHeader'
 import PmInboxThreadsTab from '../../components/PmInboxThreadsTab'
 import notificationService from '../../lib/api/notificationService'
 import { fetchPmActivityFeed } from '../../lib/api/pmInboxService'
+import { usePmDepartment, usePmDepartmentRevision } from '../../context/PmDepartmentContext'
 
 const PAGE_SIZE = 25
 const ARCHIVE_KEY = 'pm-inbox-archived-notification-ids'
@@ -109,6 +110,13 @@ function notificationIsUrgent(attrs) {
 export default function InboxPage() {
   const { user } = useAuth()
   const router = useRouter()
+  const { departmentId } = usePmDepartment()
+  const departmentRevision = usePmDepartmentRevision()
+  const departmentLabel = useMemo(() => {
+    const depts = authService.getSwitchableDepartments()
+    const match = depts.find((d) => Number(d.id) === Number(departmentId))
+    return match?.name?.trim() || 'your department'
+  }, [departmentId, departmentRevision])
 
   const [mainTab, setMainTab] = useState('activity')
   const [notifySub, setNotifySub] = useState('all')
@@ -173,9 +181,13 @@ export default function InboxPage() {
   }, [actPage])
 
   useEffect(() => {
+    setActPage(1)
+  }, [departmentRevision])
+
+  useEffect(() => {
     if (mainTab !== 'activity') return
     loadActivity()
-  }, [mainTab, loadActivity])
+  }, [mainTab, loadActivity, departmentRevision])
 
   const handleMarkRead = async (id) => {
     try {
@@ -308,7 +320,7 @@ export default function InboxPage() {
     <div className="space-y-6 p-4 md:p-6">
       <PMPageHeader
         title="Inbox"
-        subtitle="PM-wide activity, alerts, and project & task comment threads for your organization."
+        subtitle={`Department activity, alerts, and project & task threads for ${departmentLabel}.`}
         showProfile
         breadcrumb={[
           { label: 'Dashboard', href: '/' },
@@ -354,7 +366,7 @@ export default function InboxPage() {
           <div className="flex flex-col gap-1 border-b border-gray-200 bg-gray-50/90 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
               <Activity className="h-5 w-5 text-orange-500" aria-hidden />
-              Projects & tasks — all activity
+              Projects & tasks — {departmentLabel}
             </div>
             <div className="flex flex-wrap items-center gap-3">
               {!actLoading && actTotal > 0 && (

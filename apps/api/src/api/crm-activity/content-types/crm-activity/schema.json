@@ -46,6 +46,11 @@
     },
     "meta": {
       "type": "json"
+    },
+    "department": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::department.department"
     }
   }
 }

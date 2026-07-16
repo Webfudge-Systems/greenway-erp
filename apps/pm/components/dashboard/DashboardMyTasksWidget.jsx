@@ -3,18 +3,19 @@
 import { useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  Card,
-  Button,
   Avatar,
   EmptyState,
   LoadingSpinner,
   Table,
-  TableCellCreated,
   formatRelativeTime,
 } from '@greenways/ui'
 import { CheckSquare, ChevronRight, FolderKanban } from 'lucide-react'
 import { PMStatusBadge } from '../PMStatusBadge'
 import { usePmTableSort } from '../../hooks/usePmTableSort'
+import DashboardPanelShell, {
+  DashboardCountBadge,
+  DashboardPanelFooterLink,
+} from './DashboardPanelShell'
 
 const DASHBOARD_TASK_SORT_STORAGE_KEY = 'pm.dashboard.myTasks.sort'
 
@@ -221,47 +222,32 @@ export default function DashboardMyTasksWidget({
   )
 
   return (
-    <Card glass className={`flex h-full min-h-0 flex-col ${className}`}>
-      <div className="mb-3 flex shrink-0 items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-lg font-semibold text-gray-900">My Tasks</h2>
-            {showing > 0 ? (
-              <span className="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-bold text-orange-800">
-                {showing}
-              </span>
-            ) : null}
-          </div>
-          <p className="mt-0.5 text-xs text-gray-500">Open tasks assigned to you</p>
+    <DashboardPanelShell
+      title="My Tasks"
+      subtitle="Open tasks assigned to you"
+      badge={showing > 0 ? <DashboardCountBadge>{showing}</DashboardCountBadge> : null}
+      actionLabel="View all"
+      onAction={() => router.push('/my-tasks')}
+      loading={loading}
+      loadingMessage="Loading tasks…"
+      className={className}
+      footer={
+        showing === 0 ? (
+          <DashboardPanelFooterLink label="Open My Tasks" onClick={() => router.push('/my-tasks')} />
+        ) : null
+      }
+    >
+      {showing === 0 ? (
+        <div className="flex flex-1 flex-col items-center justify-center px-6 py-10 text-center">
+          <EmptyState
+            icon={CheckSquare}
+            title="No open tasks"
+            description="Completed and cancelled tasks are hidden here."
+            className="py-0"
+          />
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push('/my-tasks')}
-          className="shrink-0 text-xs font-semibold text-orange-600 hover:text-orange-700"
-        >
-          View all
-        </Button>
-      </div>
-
-      {loading ? (
-        <div className="flex flex-1 items-center justify-center py-12">
-          <LoadingSpinner size="md" message="Loading tasks…" />
-        </div>
-      ) : showing === 0 ? (
-        <EmptyState
-          icon={CheckSquare}
-          title="No open tasks"
-          description="Completed and cancelled tasks are hidden here. View all tasks on My Tasks."
-          className="flex flex-1 flex-col justify-center py-12"
-          action={
-            <Button variant="primary" size="sm" onClick={() => router.push('/my-tasks')}>
-              Go to My Tasks
-            </Button>
-          }
-        />
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+        <>
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [&_thead]:sticky [&_thead]:top-0 [&_thead]:z-[2] [&_thead_th]:bg-gray-50/95 [&_thead_th]:backdrop-blur-sm">
             <Table
               columns={sortableColumns}
@@ -288,17 +274,10 @@ export default function DashboardMyTasksWidget({
               ) : null}{' '}
               task{showing !== 1 ? 's' : ''}
             </p>
-            <button
-              type="button"
-              onClick={() => router.push('/my-tasks')}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-orange-600 hover:text-orange-700"
-            >
-              Open My Tasks
-              <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-            </button>
+            <DashboardPanelFooterLink label="Open My Tasks" onClick={() => router.push('/my-tasks')} />
           </div>
-        </div>
+        </>
       )}
-    </Card>
+    </DashboardPanelShell>
   )
 }

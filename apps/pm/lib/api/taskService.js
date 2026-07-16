@@ -296,7 +296,7 @@ class TaskService {
       return await strapiClient.get('/tasks', params);
     } catch (error) {
       console.error('Error fetching tasks by project:', error);
-      return { data: [], meta: { pagination: { total: 0 } } };
+      throw error;
     }
   }
 
