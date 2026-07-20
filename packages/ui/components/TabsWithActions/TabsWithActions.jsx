@@ -69,6 +69,10 @@ export function TabsWithActions({
   showAdd = false,
   onAddClick,
   addTitle = 'Add New',
+  /** When true, desktop add control is a labeled primary button (tasks); default is icon-only */
+  addShowLabel = false,
+  /** Visible label when addShowLabel is true; defaults to addTitle */
+  addLabel,
 
   showFilter = false,
   onFilterClick,
@@ -475,17 +479,31 @@ export function TabsWithActions({
     <div className="hidden min-w-0 flex-1 md:block">{desktopTabScrollArea}</div>
   )
 
+  const desktopAddLabel = String(addLabel || addTitle || 'Add').trim() || 'Add'
+
   const desktopActionButtons = (
     <>
       {showAdd && onAddClick && (
-        <button
-          type="button"
-          onClick={onAddClick}
-          className="hidden h-10 w-10 items-center justify-center rounded-full border border-gray-300 bg-white text-orange-600 shadow-md transition-colors duration-200 hover:border-gray-400 hover:bg-orange-50 md:flex"
-          title={addTitle}
-        >
-          <Plus className="h-5 w-5" />
-        </button>
+        addShowLabel ? (
+          <button
+            type="button"
+            onClick={onAddClick}
+            className="hidden items-center gap-2 whitespace-nowrap rounded-xl border border-orange-400 bg-orange-500 px-3.5 py-2.5 text-sm font-semibold text-white shadow-md transition-colors duration-200 hover:border-orange-500 hover:bg-orange-600 md:flex"
+            title={addTitle}
+          >
+            <Plus className="h-4 w-4 flex-shrink-0" aria-hidden />
+            <span>{desktopAddLabel}</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onAddClick}
+            className="hidden h-10 w-10 items-center justify-center rounded-full border border-gray-300 bg-white text-orange-600 shadow-md transition-colors duration-200 hover:border-gray-400 hover:bg-orange-50 md:flex"
+            title={addTitle}
+          >
+            <Plus className="h-5 w-5" />
+          </button>
+        )
       )}
 
       {showViewToggle && (

@@ -299,7 +299,7 @@ function PinnedMessageBanner({ message, onDismiss }) {
 // ── Main component ────────────────────────────────────────────────────────────
 
 /**
- * EntityActivityPanel — right-side panel with "Activity" and "Chats" sub-tabs.
+ * EntityActivityPanel — right-side panel with "Activity" and optional "Chats" sub-tabs.
  *
  * Props:
  *  - entityType: 'lead_company' | 'deal' | 'contact' | 'client_account' | 'project' | 'task'
@@ -313,6 +313,7 @@ function PinnedMessageBanner({ message, onDismiss }) {
  *  - fetchCommentsFn: async ({ entityId }) => { data: [] }   — fetches existing chat msgs
  *  - addCommentFn: async ({ entityId, comment }) => { data: msg }
  *  - chatFooterBadgeText?: string — optional hint under empty chat (e.g. PM projects)
+ *  - showChatTab?: boolean — when false, hide Chats sub-tab / composer (Activity timeline only)
  *  - defaultSubTab?: 'activity' | 'chat' — which sub-tab opens first (e.g. task Comments tab → chat)
  *  - className?: string — merged onto root card
  *  - minHeightPx / maxHeightPx?: number — panel height bounds (default 520 / 720)
@@ -335,16 +336,19 @@ export function EntityActivityPanel({
   mentionUsers: mentionUsersProp,
   fetchMentionUsers,
   composerAvatarFallback = 'Y',
+  showChatTab = true,
   defaultSubTab = 'activity',
   className = '',
   minHeightPx = 520,
   maxHeightPx = 720,
 }) {
-  const [panelTab, setPanelTab] = useState(defaultSubTab);
+  const chatEnabled = showChatTab !== false;
+  const initialSubTab = chatEnabled ? defaultSubTab : 'activity';
+  const [panelTab, setPanelTab] = useState(initialSubTab);
 
   useEffect(() => {
-    setPanelTab(defaultSubTab);
-  }, [defaultSubTab]);
+    setPanelTab(chatEnabled ? defaultSubTab : 'activity');
+  }, [defaultSubTab, chatEnabled]);
 
   // Chat state
   const [chatMessages, setChatMessages] = useState([]);
@@ -494,23 +498,37 @@ export function EntityActivityPanel({
       {/* ── Header / Sub-tabs ─────────────────────────────────────────── */}
       <div className="shrink-0 flex items-center justify-between px-4 pt-3 pb-2 border-b border-gray-100 bg-gradient-to-r from-gray-50/80 to-white">
         <div className="flex items-center gap-1.5">
-          <PanelTabBtn
-            active={panelTab === 'activity'}
-            onClick={() => setPanelTab('activity')}
-            icon={Activity}
-            label="Activity"
-            badge={timelineCount || undefined}
-          />
-          <PanelTabBtn
-            active={panelTab === 'chat'}
-            onClick={() => setPanelTab('chat')}
-            icon={MessageSquare}
-            label="Chats"
-            badge={chatMessages.length || undefined}
-          />
+          {chatEnabled ? (
+            <>
+              <PanelTabBtn
+                active={panelTab === 'activity'}
+                onClick={() => setPanelTab('activity')}
+                icon={Activity}
+                label="Activity"
+                badge={timelineCount || undefined}
+              />
+              <PanelTabBtn
+                active={panelTab === 'chat'}
+                onClick={() => setPanelTab('chat')}
+                icon={MessageSquare}
+                label="Chats"
+                badge={chatMessages.length || undefined}
+              />
+            </>
+          ) : (
+            <div className="flex items-center gap-1.5 px-1 py-1.5 text-sm font-semibold text-gray-700">
+              <Activity className="w-3.5 h-3.5 shrink-0 text-orange-500" />
+              Activity
+              {timelineCount > 0 && (
+                <span className="ml-0.5 rounded-full bg-orange-100 px-1.5 py-px text-[10px] font-bold leading-none text-orange-700">
+                  {timelineCount > 99 ? '99+' : timelineCount}
+                </span>
+              )}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-1">
-          {panelTab === 'chat' && (
+          {chatEnabled && panelTab === 'chat' && (
             <button
               type="button"
               onClick={() => {
@@ -547,13 +565,15 @@ export function EntityActivityPanel({
                 ({timelineCount} event{timelineCount !== 1 ? 's' : ''})
               </span>
             </div>
-            <button
-              type="button"
-              className="text-xs text-orange-500 hover:text-orange-700 font-medium transition-colors"
-              onClick={() => setPanelTab('chat')}
-            >
-              Open Chats →
-            </button>
+            {chatEnabled ? (
+              <button
+                type="button"
+                className="text-xs text-orange-500 hover:text-orange-700 font-medium transition-colors"
+                onClick={() => setPanelTab('chat')}
+              >
+                Open Chats →
+              </button>
+            ) : null}
           </div>
           <ActivitiesTimeline
             items={crmTimeline}
@@ -565,7 +585,7 @@ export function EntityActivityPanel({
       )}
 
       {/* ── CHAT TAB ──────────────────────────────────────────────────────── */}
-      {panelTab === 'chat' && (
+      {chatEnabled && panelTab === 'chat' && (
         <div className="relative flex-1 flex flex-col min-h-0 overflow-hidden">
           {/* Search bar */}
           {showSearch && (

@@ -748,7 +748,9 @@ export default function ProjectTasksPanel({
           searchPlaceholder="Search tasks..."
           showAdd={canCreateProjectTasks}
           onAddClick={onAddTask}
-          addTitle="Add Task"
+          addTitle="Add a new task to this project"
+          addLabel="Add Task"
+          addShowLabel
           showSort={taskViewMode === 'table'}
           onSortClick={() => setSortPickerOpen((open) => !open)}
           hasActiveSort={hasActiveSort}

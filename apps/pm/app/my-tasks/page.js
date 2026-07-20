@@ -1219,7 +1219,9 @@ export default function MyTasksPage() {
           searchPlaceholder="Search tasks..."
           showAdd
           onAddClick={() => setTaskModal({ open: true, task: null, parentContext: null })}
-          addTitle="Add Task"
+          addTitle="Add a new task"
+          addLabel="Add Task"
+          addShowLabel
           showFilter
           onFilterClick={() => setFilterOpen(true)}
           showColumnVisibility={taskViewMode === 'table'}

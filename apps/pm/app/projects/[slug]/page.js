@@ -51,14 +51,9 @@ import { InfoRow, InfoSection, SidebarCardTitle } from '@greenways/ui';
 import { getProjectStatusMeta, PROJECT_STATUS_OPTIONS } from '../../../components/PMStatusBadge';
 import projectService from '../../../lib/api/projectService';
 import { fetchProjectClientOptions, mapProjectClientSelectOptions } from '../../../lib/api/projectClientOptions';
-import {
-  addProjectComment,
-  fetchProjectActivityTimeline,
-  fetchProjectComments,
-} from '../../../lib/api/projectActivityService';
+import { fetchProjectActivityTimeline } from '../../../lib/api/projectActivityService';
 import taskService from '../../../lib/api/taskService';
 import { fetchPmAssignableUsers } from '../../../lib/api/messageService';
-import { fetchChatMentionUsers } from '../../../lib/api/chatMentionUsers';
 import { formatDate, transformProject, transformTask, transformUser } from '../../../lib/api/dataTransformers';
 import {
   collectTaskAssigneeUsers,
@@ -72,7 +67,7 @@ import {
   getPmOrgRoleKind,
 } from '../../../lib/pmOrgRoles';
 import { mergeTasksByIdForProject, filterTasksForProject } from '../../../lib/taskListUtils';
-import { entityChatMediaProps, entityFilesPanelProps } from '../../../lib/entityMedia';
+import { entityFilesPanelProps } from '../../../lib/entityMedia';
 import { usePmDepartmentRevision } from '../../../context/PmDepartmentContext';
 
 const DETAIL_TABS = [
@@ -448,15 +443,6 @@ export default function ProjectDetailPage() {
                 : undefined,
       })),
     [projectTasks.length, activityCount, fileCount]
-  );
-
-  const handleAddProjectComment = useCallback(
-    async ({ entityId, comment }) => {
-      const res = await addProjectComment({ projectId: entityId, comment });
-      await reloadProjectTimeline({ silent: true });
-      return res;
-    },
-    [reloadProjectTimeline]
   );
 
   const userOptions = useMemo(
@@ -1141,12 +1127,7 @@ export default function ProjectDetailPage() {
               crmTimelineLoading={crmTimelineLoading}
               crmTimelineError={crmTimelineError}
               activityCount={activityCount}
-              fetchCommentsFn={({ entityId }) => fetchProjectComments({ projectId: entityId, limit: 80 })}
-              addCommentFn={handleAddProjectComment}
-              mentionUsers={projectTaskUsers}
-              fetchMentionUsers={fetchChatMentionUsers}
-              chatFooterBadgeText="Messages are saved on this project for your team."
-              {...entityChatMediaProps}
+              showChatTab={false}
             />
           </div>
         </div>
